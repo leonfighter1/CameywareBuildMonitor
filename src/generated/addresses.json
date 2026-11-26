@@ -1,0 +1,45 @@
+{
+  "_readme": "Every address the code uses, in one place (owner, 2026-11-14): the company's sites, this computer's dev servers, the outside services, the default mail senders. The server and the scripts read it (src/addresses); npm run sync:app writes it into the app and the 管理后台 (app/lib/generated/addresses.dart); the website's npm run sync copies it (src/generated/addresses.json), and so does the website CMS's (C:\\CameywareCorpApps\\website\\OfficialWebsiteCMS, src/generated/addresses.json: its two addresses and ports). Change a value here, then run both syncs. An environment variable or a --dart-define still wins where one is named. Not here: code that tells an address apart (loopback checks), throwaway test data, and packages/store/docker-compose.yml's Postgres port (compose can't read this file: keep it equal to local.postgresPort).",
+  "company": {
+    "site": "https://www.cameyware.com",
+    "appPage": "/zh/works/lumingmijie/",
+    "appPath": "/app/lumingmijie",
+    "preview": "https://preview.cameyware.com",
+    "previewApi": "https://preview.cameyware.com/api",
+    "cmsPreview": "https://preview.cameyware.com/website/cms/preview",
+    "cmsPath": "/website/cms",
+    "server": "https://api.cameyware.com",
+    "api": "https://api.cameyware.com/lumingmijie"
+  },
+  "local": {
+    "host": "127.0.0.1",
+    "lanHost": "0.0.0.0",
+    "androidEmulatorHost": "10.0.2.2",
+    "apiPort": 8787,
+    "demoPort": 4173,
+    "postgresPort": 55432,
+    "cmsEditPort": 8790,
+    "cmsPreviewPort": 8791,
+    "websiteApiPort": 8802,
+    "cmsApiPort": 8803,
+    "authPort": 8804
+  },
+  "services": {
+    "resendEmails": "https://api.resend.com/emails",
+    "deepseek": "https://api.deepseek.com",
+    "turnstileVerify": "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    "appleJwks": "https://appleid.apple.com/auth/keys",
+    "appleIssuers": ["https://appleid.apple.com"],
+    "googleJwks": "https://www.googleapis.com/oauth2/v3/certs",
+    "googleIssuers": ["https://accounts.google.com", "accounts.google.com"],
+    "exchangeRates": "https://open.er-api.com/v6/latest/",
+    "modelsDev": "https://models.dev/api.json",
+    "helplines": "https://findahelpline.com",
+    "cloudflaredDownload": "https://github.com/cloudflare/cloudflared/releases/latest/download/",
+    "stripe": "https://api.stripe.com"
+  },
+  "mail": {
+    "from": "禄命秘解 <no-reply@cameyware.com>",
+    "replyTo": "support@cameyware.com"
+  }
+}

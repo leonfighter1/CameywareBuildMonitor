@@ -1,0 +1,35 @@
+{
+  "name": "cameyware-build-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cameyware's build monitor (禄命秘解 S77), its page: what the server is doing, live — deployments, uploads, containers, the CMS's builds, GitHub Actions — for preview and production. Its backend is cameyware_api's services/build-monitor",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "sync": "node scripts/sync.mjs",
+    "dev": "next dev --port 8813",
+    "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "format:check": "prettier --check .",
+    "lint": "npm run typecheck && npm run format:check",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mantine/core": "^9.7.5",
+    "@mantine/hooks": "^9.7.5",
+    "@tabler/icons-react": "^3.50.0",
+    "@tanstack/react-query": "^5.106.1",
+    "next": "^16.4.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.3.0",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

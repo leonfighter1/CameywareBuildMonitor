@@ -1,0 +1,252 @@
+@import "./site-tokens.css";
+@import "../generated/tokens.css";
+
+/* The tokens under Mantine's names, in both themes: the site's at the root, and again on an app's skin, so its pages
+   take its colours (a variable made of others is worked out where it is set). html first: Mantine adds some of these
+   names to the page at run time, after this file. */
+html:root[data-mantine-color-scheme],
+:root[data-mantine-color-scheme] [data-skin] {
+  --mantine-color-body: var(--t-background);
+  --mantine-color-text: var(--t-text);
+  --mantine-color-dimmed: var(--t-text-secondary);
+  --mantine-color-default-border: var(--t-border);
+  --mantine-color-default: var(--t-card);
+  --mantine-color-default-hover: var(--t-inset);
+  --mantine-color-default-color: var(--t-text);
+  --mantine-primary-color-filled: var(--t-accent);
+  --mantine-primary-color-filled-hover: color-mix(in srgb, var(--t-accent) 88%, var(--t-text));
+  --mantine-primary-color-contrast: var(--t-on-accent);
+  --mantine-primary-color-light: var(--t-accent-soft);
+  --mantine-primary-color-light-hover: var(--t-accent-soft);
+  --mantine-primary-color-light-color: var(--t-on-accent-soft);
+  --mantine-color-brand-light: var(--t-accent-soft);
+  --mantine-color-brand-light-hover: var(--t-accent-soft);
+  --mantine-color-brand-light-color: var(--t-on-accent-soft);
+  --mantine-color-brand-outline: var(--t-accent);
+  --mantine-color-brand-outline-hover: var(--t-accent-soft);
+  --mantine-color-anchor: var(--t-accent);
+  --mantine-color-error: var(--t-danger);
+  /* The states in the app's colours, whose contrast its tests hold. */
+  --mantine-color-red-light: var(--t-danger-soft);
+  --mantine-color-red-light-hover: var(--t-danger-soft);
+  --mantine-color-red-light-color: var(--t-on-danger-soft);
+  --mantine-color-red-outline: var(--t-danger);
+  --mantine-color-red-outline-hover: var(--t-danger-soft);
+  --mantine-color-green-light: var(--t-success-soft);
+  --mantine-color-green-light-color: var(--t-success);
+  --mantine-color-yellow-light: var(--t-warning-soft);
+  --mantine-color-yellow-light-color: var(--t-warning);
+}
+
+/* The dark theme's greys Mantine draws fields, disabled buttons and hovers with, in the palette's (its own are neutral
+   greys that stand apart from the navy). */
+html:root[data-mantine-color-scheme="dark"],
+:root[data-mantine-color-scheme="dark"] [data-skin] {
+  --mantine-color-dark-4: var(--t-border-strong);
+  --mantine-color-dark-5: var(--t-raised);
+  --mantine-color-dark-6: var(--t-inset);
+  --mantine-color-dark-7: var(--t-card);
+}
+
+/* 繁體 (/zh-hant/): its own forms of the characters, the headings in the text's sans. */
+html:lang(zh-Hant) {
+  --mantine-font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC",
+    sans-serif;
+  --mantine-font-family-headings: var(--mantine-font-family);
+}
+
+/* An app's own pages (禄命秘解's: /works/lumingmijie/…): its background and words, and its headings in 宋体 as in the app. */
+[data-skin] {
+  background: var(--t-background);
+  color: var(--t-text);
+  --mantine-font-family-headings: "Noto Serif SC", "Songti SC", SimSun, serif;
+}
+html:lang(zh-Hant) [data-skin] {
+  --mantine-font-family-headings: "Noto Serif TC", "Songti TC", PMingLiU, serif;
+}
+
+/* The cookie banner's: the library sets its own on #cc-main, so they go there. */
+:root[data-mantine-color-scheme] #cc-main {
+  --cc-bg: var(--t-raised);
+  --cc-primary-color: var(--t-text);
+  --cc-secondary-color: var(--t-text-secondary);
+  --cc-btn-primary-bg: var(--t-accent);
+  --cc-btn-primary-color: var(--t-on-accent);
+  --cc-btn-primary-hover-bg: var(--t-accent);
+  --cc-btn-primary-hover-color: var(--t-on-accent);
+  --cc-btn-secondary-bg: var(--t-inset);
+  --cc-btn-secondary-color: var(--t-text);
+  --cc-btn-secondary-hover-bg: var(--t-border);
+  --cc-btn-secondary-hover-color: var(--t-text);
+  --cc-toggle-on-bg: var(--t-accent);
+  --cc-separator-border-color: var(--t-border);
+  --cc-cookie-category-block-bg: var(--t-inset);
+  --cc-cookie-category-block-border: var(--t-border);
+  --cc-cookie-category-block-hover-bg: var(--t-inset);
+  --cc-cookie-category-block-hover-border: var(--t-border);
+}
+
+/* SideLayout's left column (components/side-layout.tsx): its own width, in view as a wide page scrolls. */
+.side-col {
+  flex-shrink: 0;
+}
+@media (min-width: 62em) {
+  .side-col {
+    position: sticky;
+    top: var(--mantine-spacing-xl);
+  }
+}
+
+/* A row of cards (a SimpleGrid with this class): a card alone in it takes the whole row (the owner, 2026-11-22:
+   「如果这一行缺少右边的，需要occupy 100」), and a row with no card leaves no gap. */
+.fill-alone > :only-child {
+  grid-column: 1 / -1;
+}
+.fill-alone:empty {
+  display: none;
+}
+
+/* What can't be undone: the danger colour and the words made for it. */
+.btn-danger {
+  --button-bg: var(--t-danger) !important;
+  --button-hover: var(--t-danger) !important;
+  --button-color: var(--t-on-danger) !important;
+}
+
+/* The hero's night, whatever the theme: its words are written for it. */
+.hero {
+  background:
+    radial-gradient(
+      60rem 30rem at 85% 50%,
+      color-mix(in srgb, var(--t-night-accent) 16%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(135deg, var(--t-night-background), var(--t-night-card));
+  color: var(--t-night-text);
+}
+
+.hero-line {
+  color: color-mix(in srgb, var(--t-night-text) 85%, transparent);
+}
+
+/* The 罗盘's picture has a dark square of its own: its edges fade, so no line shows on the hero's gradient. */
+.hero-art {
+  mask-image:
+    linear-gradient(to right, transparent, #000 10%, #000 90%, transparent),
+    linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+  mask-composite: intersect;
+}
+
+/* 图文 (the CMS's rich_text): the site's text, its headings and lists as the pages had them. */
+.cms-rich > :first-child {
+  margin-top: 0;
+}
+.cms-rich > :last-child {
+  margin-bottom: 0;
+}
+.cms-rich h2,
+.cms-rich h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: var(--mantine-spacing-xl) 0 var(--mantine-spacing-sm);
+}
+.cms-rich h3 {
+  font-size: 17px;
+}
+.cms-rich p {
+  margin: 0 0 var(--mantine-spacing-sm);
+}
+.cms-rich ol,
+.cms-rich ul {
+  margin: 0 0 var(--mantine-spacing-sm);
+  padding-inline-start: 1.5em;
+}
+.cms-rich li + li {
+  margin-top: var(--mantine-spacing-sm);
+}
+.cms-rich a {
+  color: var(--t-accent);
+}
+.cms-rich .cms-big {
+  font-size: var(--mantine-font-size-lg);
+}
+.cms-rich .cms-dimmed {
+  color: var(--mantine-color-dimmed);
+}
+.cms-rich[data-server="off"] [data-when="server"] {
+  display: none;
+}
+
+/* The CMS's preview only (NEXT_PUBLIC_CMS=on): every block outlined with its Edit, a bar at the top. */
+.cms-frame {
+  position: relative;
+  outline: 1px dashed color-mix(in srgb, var(--t-accent) 35%, transparent);
+  outline-offset: 2px;
+}
+.cms-frame:hover {
+  outline: 2px solid var(--t-accent);
+}
+.cms-frame > .cms-edit {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 20;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--t-accent);
+  color: var(--t-on-accent);
+  text-decoration: none;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--t-text) 25%, transparent);
+}
+.cms-frame > .cms-edit:focus-visible {
+  outline: 2px solid var(--t-text);
+  outline-offset: 2px;
+}
+.cms-frame[data-cms-place="center"] > .cms-edit {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.cms-frame[data-cms-kind="page"] {
+  outline: none;
+}
+.cms-frame[data-cms-kind="page"] > .cms-edit {
+  top: auto;
+  bottom: 6px;
+}
+.cms-bar {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  padding: 6px 16px;
+  background: var(--t-night-card);
+  color: var(--t-night-text);
+  border-bottom: 1px solid var(--t-night-border);
+}
+/* A landing page's action band (layouts.ts): across the window, set off from the page. */
+.cms-band {
+  background: var(--t-card);
+  border-top: 1px solid var(--t-border);
+  border-bottom: 1px solid var(--t-border);
+}
+
+/* One block alone in a CMS editor's preview (?block=): no header, no footer, no cookie banner, no Edit on it. */
+body[data-cms-only] header,
+body[data-cms-only] footer,
+body[data-cms-only] #cc-main,
+body[data-cms-only] .cms-edit {
+  display: none !important;
+}
+/* The CMS preview in an editor's frame (live.tsx): the page, without the cookie banner over it. */
+body[data-cms-framed] #cc-main {
+  display: none !important;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

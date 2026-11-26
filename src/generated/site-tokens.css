@@ -1,0 +1,63 @@
+/* The company's own colours (the owner, 2026-11-22: 「网站皮肤需要更改， 不再采用《禄命》的app主色调作为公司网站的主色调。换一种
+   更适合网站开发的主题。但是对于app本身的介绍页面需要有合适的皮肤」): a calm blue on cool greys, the same names as the
+   app's tokens so every page and component reads them alike. An app's own pages take its colours instead
+   (data-skin, src/generated/tokens.css). Every text colour holds 4.5 : 1 on every surface in both themes:
+   tests/unit/palette.test.ts. */
+:root[data-mantine-color-scheme="light"] {
+  --t-background: #f6f8fb;
+  --t-card: #ffffff;
+  --t-raised: #ffffff;
+  --t-inset: #eef2f7;
+  --t-border: #dde3eb;
+  --t-border-strong: #b9c3d0;
+  --t-text: #0f172a;
+  --t-text-secondary: #475467;
+  --t-text-muted: #5a6577;
+  --t-accent: #2557d6;
+  --t-on-accent: #ffffff;
+  --t-accent-soft: #e7eefc;
+  --t-on-accent-soft: #1a3a8f;
+  --t-success: #1e7044;
+  --t-success-soft: #e3f3ea;
+  --t-warning: #8a5300;
+  --t-warning-soft: #fbf0da;
+  --t-danger: #b42318;
+  --t-on-danger: #ffffff;
+  --t-danger-soft: #fde8e6;
+  --t-on-danger-soft: #7a1a12;
+  --t-info: #1f5f99;
+  --t-info-soft: #e3eef8;
+}
+:root[data-mantine-color-scheme="dark"] {
+  --t-background: #0b111c;
+  --t-card: #121a28;
+  --t-raised: #182234;
+  --t-inset: #1c2739;
+  --t-border: #2a364b;
+  --t-border-strong: #435069;
+  --t-text: #e8edf5;
+  --t-text-secondary: #b4bfd0;
+  --t-text-muted: #8f9baf;
+  --t-accent: #7ea6ff;
+  --t-on-accent: #0b111c;
+  --t-accent-soft: #1a2c52;
+  --t-on-accent-soft: #cbdaff;
+  --t-success: #5cc58c;
+  --t-success-soft: #123024;
+  --t-warning: #e8b65c;
+  --t-warning-soft: #33270f;
+  --t-danger: #f4938a;
+  --t-on-danger: #1a0b0a;
+  --t-danger-soft: #3b1716;
+  --t-on-danger-soft: #f9c7c2;
+  --t-info: #7db4ee;
+  --t-info-soft: #13293f;
+}
+/* The night, whatever the theme (the hero, the CMS's bar): the dark theme's colours. */
+:root {
+  --t-night-background: #0b111c;
+  --t-night-card: #121a28;
+  --t-night-border: #2a364b;
+  --t-night-text: #e8edf5;
+  --t-night-accent: #7ea6ff;
+}

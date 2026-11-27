@@ -110,13 +110,20 @@ function refresh(): Promise<boolean> {
   return refreshing;
 }
 
-/** GET /ops/v1[path] as the signed-in reader; an ended session signs out. */
-export async function ops<T>(path: string): Promise<T> {
+/**
+ * GET /ops/v1[path] as the signed-in reader, or POST it when there's a [body] (a deploy asked for or stopped: S83); an
+ * ended session signs out.
+ */
+export async function ops<T>(path: string, body?: unknown): Promise<T> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const t = session.get();
     if (!t) throw new ApiError(401, "signed out");
     const res = await fetch(`${root()}/ops/v1${path}`, {
-      headers: { authorization: `Bearer ${t.access_token}` },
+      headers: {
+        authorization: `Bearer ${t.access_token}`,
+        ...(body !== undefined && { "content-type": "application/json" }),
+      },
+      ...(body !== undefined && { method: "POST", body: JSON.stringify(body) }),
     });
     if (res.status === 401 && attempt === 0 && (await refresh())) continue;
     const json = (await res.json().catch(() => ({}))) as T & { title?: string; code?: string };

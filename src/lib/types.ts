@@ -61,7 +61,7 @@ export interface Agent {
   stale: boolean;
 }
 
-export interface Overview {
+export interface Overview extends Deploying {
   agent: Agent;
   /** [typical]: how long its deploys usually take, ms (S80); null before any. */
   envs: Record<Env, { services: ServiceView[]; running: Run | null; typical?: number | null }>;
@@ -109,3 +109,60 @@ export interface ActionRun {
 }
 
 export type Source<T> = { configured: false } | ({ configured: true } & T) | { error: string };
+
+/** Deploys asked for from the page (S83, its src/jobs.ts): one at a time, run by the runner on the deploying computer. */
+export type JobState = "queued" | "running" | "done" | "failed" | "cancelled";
+
+/** A repository as the runner sees it: its committed HEAD, whether GitHub has it, what isn't committed. */
+export interface Head {
+  name: string;
+  head: string;
+  subject: string;
+  at: string;
+  pushed: boolean;
+  changed: number;
+}
+
+export interface Runner {
+  machine: string;
+  seen: string;
+  repos: Head[];
+  job?: string;
+}
+
+export interface Job {
+  id: string;
+  env: Env;
+  by: string;
+  requested: string;
+  state: JobState;
+  started?: string;
+  ended?: string;
+  machine?: string;
+  /** The commits it deployed. */
+  repos?: Head[];
+  /** Its run (the deploy's report). */
+  deploy?: string;
+  cancel?: boolean;
+  lines: number;
+  /** Its output's last lines (GET /jobs/{id}). */
+  output?: string[];
+}
+
+/** The runner and the job going on (/runner, and on /overview); what this caller may ask for. */
+export interface Deploying {
+  online: boolean;
+  runner?: Runner;
+  job: Job | null;
+  /** allowed: the superadmin; production: on after its cut-over (S74.9). */
+  deploys: { allowed: boolean; production: boolean };
+}
+
+export interface JobsPage {
+  items: Job[];
+  counts: Record<JobState, number>;
+  total: number;
+  all: number;
+  page: number;
+  per_page: number;
+}

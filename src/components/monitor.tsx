@@ -20,6 +20,7 @@ import { ApiError, ops, session, signIn, takeHandoff } from "@/lib/api";
 import type { Env, Overview } from "@/lib/types";
 import { ago, ENV_NAMES } from "@/lib/words";
 import { ToneBadge } from "./bits";
+import { DeployPanel, JobsList } from "./deploy";
 import { RunCard } from "./run-card";
 import { RunsList } from "./runs-list";
 import { Services } from "./services";
@@ -98,6 +99,7 @@ function EnvTab({ env, overview, now }: { env: Env; overview: Overview; now: num
   const { services, running, typical } = overview.envs[env];
   return (
     <Stack gap="lg">
+      <DeployPanel env={env} d={overview} now={now} typical={typical} />
       {running ? (
         <RunCard run={running} now={now} typical={typical} />
       ) : (
@@ -113,6 +115,10 @@ function EnvTab({ env, overview, now }: { env: Env; overview: Overview; now: num
         部署记录
       </Title>
       <RunsList env={env} now={now} typical={typical} />
+      <Title order={2} fz={18}>
+        从页面发起的部署
+      </Title>
+      <JobsList env={env} now={now} />
     </Stack>
   );
 }
@@ -122,9 +128,11 @@ function Monitor() {
   const overview = useQuery({
     queryKey: ["overview"],
     queryFn: () => ops<Overview>("/overview"),
-    // Every 3 seconds while a deploy runs anywhere, else every 15.
+    // Every 3 seconds while a deploy runs anywhere or one asked for waits (S83), else every 15.
     refetchInterval: (q) =>
-      q.state.data && Object.values(q.state.data.envs).some((e) => e.running) ? 3_000 : 15_000,
+      q.state.data && (q.state.data.job || Object.values(q.state.data.envs).some((e) => e.running))
+        ? 3_000
+        : 15_000,
   });
   const forbidden = overview.error instanceof ApiError && overview.error.status === 403;
   const agent = overview.data?.agent;

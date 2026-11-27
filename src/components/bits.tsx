@@ -8,8 +8,8 @@ import {
   IconPlayerStop,
 } from "@tabler/icons-react";
 import type { ReactNode } from "react";
-import type { Health, State } from "@/lib/types";
-import { HEALTH_WORDS, STATE_WORDS } from "@/lib/words";
+import type { Health, JobState, State } from "@/lib/types";
+import { HEALTH_WORDS, JOB_WORDS, STATE_WORDS } from "@/lib/words";
 
 /** The company's state colours (its tokens: site-tokens.css), never a colour written here; a state never colour alone. */
 export type Tone = "success" | "warning" | "danger" | "info" | "muted";
@@ -59,6 +59,23 @@ export function StateBadge({ state }: { state: State }) {
       {STATE_WORDS[state]}
     </ToneBadge>
   );
+}
+
+/** A deploy asked for from the page (S83): waiting for the runner, going on, or how it ended. */
+export function JobBadge({ state }: { state: JobState }) {
+  if (state === "queued")
+    return (
+      <ToneBadge tone="info" icon={<IconClock size={14} />}>
+        {JOB_WORDS.queued}
+      </ToneBadge>
+    );
+  if (state === "cancelled")
+    return (
+      <ToneBadge tone="muted" icon={<IconPlayerStop size={14} />}>
+        {JOB_WORDS.cancelled}
+      </ToneBadge>
+    );
+  return <StateBadge state={state} />;
 }
 
 export function StateIcon({ state, size = 14 }: { state: State; size?: number }) {

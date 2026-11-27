@@ -2,7 +2,7 @@
  * The page's words, in 简体 (a tool for the company's own staff), and how it shows sizes and times. A group or service
  * it doesn't know yet shows by its own name.
  */
-import type { Env, Health, Machine, State, Step } from "./types";
+import type { Env, Health, JobState, Machine, State, Step } from "./types";
 
 export const ENV_NAMES: Record<Env, string> = { preview: "预览站", production: "正式站" };
 
@@ -40,6 +40,15 @@ export const HEALTH_WORDS: Record<Health, string> = {
 };
 
 export const STATE_WORDS: Record<State, string> = { running: "进行中", done: "已完成", failed: "失败" };
+
+/** A deploy asked for from the page (S83). */
+export const JOB_WORDS: Record<JobState, string> = {
+  queued: "等部署电脑接手",
+  running: "进行中",
+  done: "已完成",
+  failed: "失败",
+  cancelled: "已停止",
+};
 
 const SCRIPTS: Record<string, string> = {
   "rebuild-sites": "重建官网和 CMS 预览",

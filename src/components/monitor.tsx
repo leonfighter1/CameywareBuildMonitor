@@ -142,6 +142,11 @@ function Monitor() {
   });
   const forbidden = overview.error instanceof ApiError && overview.error.status === 403;
   const agent = overview.data?.agent;
+  // This page's own commit (set by the deploy that built it, S84) against the one the preview runs now: a page left
+  // open after a newer one went out asks to be reloaded (2026-11-27: a deploy asked from the old page had no parts).
+  const mine = process.env.NEXT_PUBLIC_PAGE_COMMIT;
+  const served = overview.data?.envs.preview.deployed?.page;
+  const stale = !!mine && !!served && served !== mine;
   return (
     <Container py="xl">
       <Stack gap="lg">
@@ -169,6 +174,16 @@ function Monitor() {
             </Button>
           </Group>
         </Group>
+        {stale && (
+          <Alert color="yellow" data-testid="page-stale">
+            <Group justify="space-between" wrap="wrap" gap="sm">
+              <Text size="sm">部署监控的网页已经更新，这个页面还是旧版本。刷新后再部署。</Text>
+              <Button size="xs" onClick={() => window.location.reload()}>
+                刷新
+              </Button>
+            </Group>
+          </Alert>
+        )}
         {forbidden ? (
           <Alert color="red">这个账号不是网站管理员或超级管理员，不能查看部署监控。</Alert>
         ) : overview.error ? (

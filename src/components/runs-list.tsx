@@ -40,7 +40,7 @@ export function RunsList({ env, now }: { env: Env; now: number }) {
         <Stack gap="sm">
           <TextInput
             label="搜索"
-            placeholder="文件、服务或版本"
+            placeholder="文件、服务、版本、电脑或部署人"
             leftSection={<IconSearch size={16} />}
             value={words}
             onChange={(e) => {

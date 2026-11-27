@@ -95,11 +95,11 @@ function SignIn() {
 }
 
 function EnvTab({ env, overview, now }: { env: Env; overview: Overview; now: number }) {
-  const { services, running } = overview.envs[env];
+  const { services, running, typical } = overview.envs[env];
   return (
     <Stack gap="lg">
       {running ? (
-        <RunCard run={running} now={now} />
+        <RunCard run={running} now={now} typical={typical} />
       ) : (
         <Card>
           <Text c="var(--t-text-secondary)">{ENV_NAMES[env]}现在没有部署在进行。</Text>
@@ -133,7 +133,8 @@ function Monitor() {
       <Stack gap="lg">
         <Group justify="space-between" wrap="wrap" gap="sm">
           <Stack gap={4}>
-            <Title order={1} fz={28}>
+            <Text className="cy-overline cy-mono">Cameyware // ops monitor</Text>
+            <Title order={1} fz={30}>
               部署监控
             </Title>
             <Text size="sm" c="var(--t-text-secondary)">

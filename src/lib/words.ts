@@ -2,7 +2,7 @@
  * The page's words, in 简体 (a tool for the company's own staff), and how it shows sizes and times. A group or service
  * it doesn't know yet shows by its own name.
  */
-import type { Env, Health, State, Step } from "./types";
+import type { Env, Health, Machine, State, Step } from "./types";
 
 export const ENV_NAMES: Record<Env, string> = { preview: "预览站", production: "正式站" };
 
@@ -61,8 +61,14 @@ export function stepTitle(s: Step): string {
       return SCRIPTS[s.script ?? ""] ?? `运行 ${s.script ?? ""}`;
     case "container":
       return `${serviceName(s.group, s.service ?? "")}：等健康检查通过`;
+    case "local":
+      return s.name ?? "";
   }
 }
+
+/** The deploying computer as it describes itself (S80): its name, system, processor and memory. */
+export const machineLine = (m: Machine) =>
+  `${m.name} · ${m.os} · ${m.cpu}（${m.cores} 核）· 内存 ${m.memory_gb} GB`;
 
 export function bytes(n: number): string {
   if (n >= 1e9) return `${(n / 1e9).toFixed(2)} GB`;
@@ -80,6 +86,16 @@ export function span(ms: number): string {
   const h = Math.floor(m / 60);
   if (h < 48) return `${h} 小时${m % 60 ? ` ${m % 60} 分` : ""}`;
   return `${Math.floor(h / 24)} 天`;
+}
+
+/** A span as a clock: 04:36, 1:02:09 (the ring's middle). */
+export function clock(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const two = (n: number) => String(n).padStart(2, "0");
+  const h = Math.floor(s / 3600);
+  return h
+    ? `${h}:${two(Math.floor(s / 60) % 60)}:${two(s % 60)}`
+    : `${two(Math.floor(s / 60))}:${two(s % 60)}`;
 }
 
 /** How long ago [iso] was, from [now]. */

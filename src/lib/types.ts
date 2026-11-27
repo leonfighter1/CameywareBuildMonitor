@@ -19,7 +19,8 @@ export interface ServiceView {
 
 export interface Step {
   key: string;
-  kind: "upload" | "load" | "start" | "restart" | "exec" | "container";
+  /** local (S80): a step on the deploying computer, as its script says. */
+  kind: "upload" | "load" | "start" | "restart" | "exec" | "container" | "local";
   group: string;
   file?: string;
   service?: string;
@@ -30,6 +31,17 @@ export interface Step {
   bytes?: number;
   expect?: number;
   speed?: number;
+  /** A local step's words (S80). */
+  name?: string;
+}
+
+/** The computer a deploy ran on (S80): each its own. */
+export interface Machine {
+  name: string;
+  os: string;
+  cpu: string;
+  cores: number;
+  memory_gb: number;
 }
 
 export interface Run {
@@ -40,6 +52,8 @@ export interface Run {
   ended?: string;
   steps: Step[];
   versions?: Record<string, Record<string, string>>;
+  /** The deploy's script's own report (S80): who ran it on which computer; open while it goes on. */
+  deploy?: { id: string; by: string; machine: Machine; open: boolean; state?: State; seen: string };
 }
 
 export interface Agent {
@@ -49,7 +63,8 @@ export interface Agent {
 
 export interface Overview {
   agent: Agent;
-  envs: Record<Env, { services: ServiceView[]; running: Run | null }>;
+  /** [typical]: how long its deploys usually take, ms (S80); null before any. */
+  envs: Record<Env, { services: ServiceView[]; running: Run | null; typical?: number | null }>;
 }
 
 export interface RunsPage {

@@ -1,0 +1,246 @@
+/* The build monitor's own skin (the owner, 2026-11-26: 「进一步优化监控页面，采用更先进的动画，采用animated 圆盘的进度条，带有
+   bouncing的动感。整体页面要好看且有点赛博风格」): the company's token names (src/generated/site-tokens.css) given this page's
+   colours, neon on deep navy at night and ink on cool white by day, so every component that reads them follows; and its
+   own (--cy-*): the neon pair, its glow, the grid behind. Every text colour holds 4.5 : 1 on its surfaces. Loaded after
+   the generated files, on this page alone: the website and the CMS keep the company's look. */
+:root[data-mantine-color-scheme="dark"] {
+  --t-background: #060a13;
+  --t-card: rgba(12, 19, 35, 0.88);
+  --t-raised: #101a30;
+  --t-inset: #0b1426;
+  --t-border: #1b2a45;
+  --t-border-strong: #2c4370;
+  --t-text: #e6f1ff;
+  --t-text-secondary: #a3b8d8;
+  --t-text-muted: #8ea4c6;
+  --t-accent: #22d3ee;
+  --t-on-accent: #03141b;
+  --t-accent-soft: rgba(34, 211, 238, 0.14);
+  --t-on-accent-soft: #7ee8f8;
+  --t-success: #4ade80;
+  --t-success-soft: rgba(74, 222, 128, 0.14);
+  --t-warning: #fbbf24;
+  --t-warning-soft: rgba(251, 191, 36, 0.14);
+  --t-danger: #fb7185;
+  --t-danger-soft: rgba(251, 113, 133, 0.14);
+  --t-on-danger: #1a0508;
+  --t-on-danger-soft: #fda4af;
+  --t-info: #38bdf8;
+  --t-info-soft: rgba(56, 189, 248, 0.14);
+  --cy-neon: #22d3ee;
+  --cy-neon-2: #e879f9;
+  --cy-glow: rgba(34, 211, 238, 0.55);
+  --cy-glow-2: rgba(232, 121, 249, 0.35);
+  --cy-grid: rgba(34, 211, 238, 0.055);
+  --cy-haze-1: rgba(34, 211, 238, 0.1);
+  --cy-haze-2: rgba(232, 121, 249, 0.08);
+}
+
+:root[data-mantine-color-scheme="light"] {
+  --t-background: #eef4fb;
+  --t-card: rgba(255, 255, 255, 0.92);
+  --t-raised: #ffffff;
+  --t-inset: #e3ecf6;
+  --t-border: #c9d7e8;
+  --t-border-strong: #94aac6;
+  --t-text: #0b1324;
+  --t-text-secondary: #3c4d66;
+  --t-text-muted: #4f6280;
+  --t-accent: #0e7490;
+  --t-on-accent: #ffffff;
+  --t-accent-soft: rgba(14, 116, 144, 0.1);
+  --t-on-accent-soft: #0b5d73;
+  --t-success: #15803d;
+  --t-success-soft: rgba(21, 128, 61, 0.1);
+  --t-warning: #b45309;
+  --t-warning-soft: rgba(180, 83, 9, 0.1);
+  --t-danger: #be123c;
+  --t-danger-soft: rgba(190, 18, 60, 0.1);
+  --t-on-danger: #ffffff;
+  --t-on-danger-soft: #9f1239;
+  --t-info: #0369a1;
+  --t-info-soft: rgba(3, 105, 161, 0.1);
+  --cy-neon: #06b6d4;
+  --cy-neon-2: #c026d3;
+  --cy-glow: rgba(6, 182, 212, 0.35);
+  --cy-glow-2: rgba(192, 38, 211, 0.2);
+  --cy-grid: rgba(14, 116, 144, 0.07);
+  --cy-haze-1: rgba(6, 182, 212, 0.12);
+  --cy-haze-2: rgba(192, 38, 211, 0.07);
+}
+
+/* Behind everything: a faint grid and two hazes, still as the page scrolls. */
+.cy-body {
+  background-color: var(--t-background);
+  background-image:
+    radial-gradient(1100px 560px at 8% -12%, var(--cy-haze-1), transparent 62%),
+    radial-gradient(900px 520px at 108% 6%, var(--cy-haze-2), transparent 60%),
+    linear-gradient(var(--cy-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cy-grid) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    32px 32px,
+    32px 32px;
+  background-attachment: fixed;
+}
+
+/* Numbers that change in place: the same width for every digit. */
+.cy-mono {
+  font-family: ui-monospace, "Cascadia Mono", "JetBrains Mono", Consolas, "SF Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Figures with words among them (12 分 38 秒): the page's own font, its digits each the same width. */
+.cy-digits {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A small line above a heading: what the page is, in the console's voice. */
+.cy-overline {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--t-accent);
+}
+
+/* Every panel: glass on the grid, two corners cut, a neon corner mark. */
+.mantine-Card-root {
+  position: relative;
+  background: var(--t-card);
+  border: 1px solid var(--t-border);
+  backdrop-filter: blur(6px);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+.mantine-Card-root::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--cy-neon), transparent);
+}
+
+/* The deploy going on: its edge glows and breathes. */
+.cy-live {
+  border-color: color-mix(in srgb, var(--cy-neon) 55%, var(--t-border));
+  animation: cy-breathe 2.4s ease-in-out infinite;
+}
+
+/* The ring (components/ring.tsx): the bar springs past its mark and back each time it moves; the orbit spins while live. */
+.cy-ring {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.cy-ring > svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+.cy-ring-bar {
+  transition: stroke-dashoffset 1.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 0 6px var(--cy-glow));
+}
+.cy-ring-orbit {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cy-spin 2.6s linear infinite;
+}
+.cy-ring-label {
+  position: relative;
+  text-align: center;
+  line-height: 1.15;
+}
+
+/* A number that just changed hops; a step just done pops in; a step going on pulses. */
+.cy-bump {
+  display: inline-block;
+  animation: cy-bump 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cy-pop {
+  display: inline-flex;
+  animation: cy-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.cy-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cy-neon);
+  box-shadow: 0 0 10px var(--cy-glow);
+  animation: cy-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes cy-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cy-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 22px -6px var(--cy-glow),
+      inset 0 0 18px -12px var(--cy-glow-2);
+  }
+}
+@keyframes cy-bump {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    transform: translateY(-4px) scale(1.12);
+  }
+  70% {
+    transform: translateY(1px) scale(0.97);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes cy-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes cy-pulse {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+/* Those who asked their system for less motion get none of it. */
+@media (prefers-reduced-motion: reduce) {
+  .cy-live,
+  .cy-ring-bar,
+  .cy-ring-orbit,
+  .cy-bump,
+  .cy-pop,
+  .cy-dot {
+    animation: none !important;
+    transition: none !important;
+  }
+}

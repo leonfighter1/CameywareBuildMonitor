@@ -1,6 +1,6 @@
 {
   "name": "cameyware-build-monitor",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "Cameyware's build monitor (禄命秘解 S77), its page: what the server is doing, live — deployments, uploads, containers, the CMS's builds, GitHub Actions — for preview and production. Its backend is cameyware_api's services/build-monitor",

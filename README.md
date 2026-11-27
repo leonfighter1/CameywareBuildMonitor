@@ -19,9 +19,15 @@
 | `npm run build` | 静态导出到 `out/`（`/ops/` 下）                                                            |
 | `npm run lint`  | 类型检查和格式检查                                                                         |
 
-部署：在 cameyware_api 的 `services/app-lumingmijie` 运行 `npm run deploy:preview`，它会构建这个页面并放到预览站的 `/ops/`。
+部署：在 `C:\CameywareCorpApps\server`（CameywareServer）运行 `npm run deploy:preview`，它会构建这个页面并放到预览站的 `/ops/`。
 
 ## 更新记录
+
+### 2026-11-27：部署和服务器的设置移到 CameywareServer
+
+- **部署**：这个页面改在 `C:\CameywareCorpApps\server`（CameywareServer）运行 `npm run deploy:preview` 部署（以前在 cameyware_api 的 `services/app-lumingmijie`），照旧构建后放到预览站的 `/ops/`。
+- `docs/agent/MISTAKES.md` 不再提交，和每个仓库的 `docs/` 一样只留在这台电脑上。
+- 验证：格式检查。
 
 ### v0.4.1（2026-11-27）：部署记录里的进度和顶部一致
 

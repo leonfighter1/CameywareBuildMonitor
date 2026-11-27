@@ -13,4 +13,4 @@ Its backend is cameyware_api's `services/build-monitor` (`/ops/v1`): front end h
 - **Lists of records** (runs): pages, filters with counts, search; no 删除 (a log, 90 days kept by the backend).
 - **Never itself:** the monitor shows the other services; its own container, image and files are left out by the agent.
 - **Checks:** `npm run lint`, `npm run build`, and a look at the page (both themes, a phone). Commit and tag; the owner
-  pushes. Deploy: cameyware_api's `npm run deploy:preview`.
+  pushes. Deploy: `npm run deploy:preview` in `C:\CameywareCorpApps\server` (CameywareServer).

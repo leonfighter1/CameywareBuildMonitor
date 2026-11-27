@@ -73,6 +73,24 @@ export async function signIn(login: string, password: string) {
   session.set(await post<Tokens>("/auth/v1/login", { login, password, client: "web" }));
 }
 
+/**
+ * Opened from the CMS's menu (禄命秘解 S77; the owner, 2026-11-26: 「如果用户登录admin了，可以直接登录部署监控，无需再登录了」):
+ * its one-time code (?code=…) redeemed for this page's own session, then taken out of the address. A code used or late
+ * leaves the sign-in form.
+ */
+export async function takeHandoff() {
+  const url = new URL(window.location.href);
+  const code = url.searchParams.get("code");
+  if (!code) return;
+  url.searchParams.delete("code");
+  window.history.replaceState(null, "", url.toString());
+  try {
+    session.set(await post<Tokens>("/auth/v1/handoff/redeem", { code }));
+  } catch {
+    // used or late: sign in as usual
+  }
+}
+
 let refreshing: Promise<boolean> | undefined;
 /** A new pair for the old, once at a time; false (and signed out) when the session has ended. */
 function refresh(): Promise<boolean> {

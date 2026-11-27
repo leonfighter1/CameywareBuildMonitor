@@ -16,7 +16,7 @@ import { useInterval } from "@mantine/hooks";
 import { IconBrandGithub, IconCloud, IconRocket, IconServer } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { ApiError, ops, session, signIn } from "@/lib/api";
+import { ApiError, ops, session, signIn, takeHandoff } from "@/lib/api";
 import type { Env, Overview } from "@/lib/types";
 import { ago, ENV_NAMES } from "@/lib/words";
 import { ToneBadge } from "./bits";
@@ -195,12 +195,17 @@ function Monitor() {
   );
 }
 
-/** Signed in, the monitor; else its sign-in. */
+/** Signed in, the monitor; else its sign-in. A code handed over from the CMS signs in first (takeHandoff). */
 export function App() {
   const signedIn = useSyncExternalStore(
     session.subscribe,
     () => !!session.get(),
     () => false,
   );
+  const [handing, setHanding] = useState(true);
+  useEffect(() => {
+    void takeHandoff().finally(() => setHanding(false));
+  }, []);
+  if (handing && !signedIn) return null;
   return signedIn ? <Monitor /> : <SignIn />;
 }

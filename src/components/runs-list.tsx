@@ -11,9 +11,10 @@ import { RunCard } from "./run-card";
 
 /**
  * An environment's runs: in pages, by state with each one's count, searched by file, service or version as one types
- * (300 ms) and at once on Enter. A run is a log: none is deleted here (90 days kept).
+ * (300 ms) and at once on Enter. A run is a log: none is deleted here (90 days kept). [typical]: the environment's, so a
+ * run going on fills its ring as the one at the top does (the owner, 2026-11-27: 「这两个进度显示不一样」).
  */
-export function RunsList({ env, now }: { env: Env; now: number }) {
+export function RunsList({ env, now, typical }: { env: Env; now: number; typical?: number | null }) {
   const [state, setState] = useState<State | "">("");
   const [words, setWords] = useState("");
   const [typed] = useDebouncedValue(words.trim(), 300);
@@ -82,7 +83,7 @@ export function RunsList({ env, now }: { env: Env; now: number }) {
         // The run going on is at the top of the page: here only when 进行中 is asked for.
         d?.items
           .filter((r) => state === "running" || r.state !== "running")
-          .map((r) => <RunCard key={r.id} run={r} now={now} />)
+          .map((r) => <RunCard key={r.id} run={r} now={now} typical={typical} />)
       )}
       {d && Math.ceil(d.total / d.per_page) > 1 && (
         <Group justify="flex-end">

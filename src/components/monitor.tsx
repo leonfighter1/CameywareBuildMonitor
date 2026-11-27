@@ -112,7 +112,7 @@ function EnvTab({ env, overview, now }: { env: Env; overview: Overview; now: num
       <Title order={2} fz={18}>
         部署记录
       </Title>
-      <RunsList env={env} now={now} />
+      <RunsList env={env} now={now} typical={typical} />
     </Stack>
   );
 }

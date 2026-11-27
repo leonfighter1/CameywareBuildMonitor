@@ -9,6 +9,8 @@
     "cmsPreview": "https://preview.cameyware.com/website/cms/preview",
     "cmsPath": "/website/cms",
     "server": "https://api.cameyware.com",
+    "ssh": "ssh.cameyware.com",
+    "ops": "https://preview.cameyware.com/ops/",
     "api": "https://api.cameyware.com/lumingmijie"
   },
   "local": {

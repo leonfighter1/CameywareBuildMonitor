@@ -64,7 +64,16 @@ export interface Agent {
 export interface Overview extends Deploying {
   agent: Agent;
   /** [typical]: how long its deploys usually take, ms (S80); null before any. */
-  envs: Record<Env, { services: ServiceView[]; running: Run | null; typical?: number | null }>;
+  /** [deployed]: what each part runs now (S84: its groups' deployed.json; PART_NAMES' keys). */
+  envs: Record<
+    Env,
+    {
+      services: ServiceView[];
+      running: Run | null;
+      typical?: number | null;
+      deployed?: Record<string, string>;
+    }
+  >;
 }
 
 export interface RunsPage {
@@ -127,6 +136,8 @@ export interface Runner {
   machine: string;
   seen: string;
   repos: Head[];
+  /** Each part's value at those heads (S84), what a deploy now would make it. */
+  parts?: Record<string, string>;
   job?: string;
 }
 
@@ -141,6 +152,10 @@ export interface Job {
   machine?: string;
   /** The commits it deployed. */
   repos?: Head[];
+  /** The parts it may change (S84, as ticked); none: every part that moved. */
+  only?: string[];
+  /** Each part's value as its runner took it. */
+  parts?: Record<string, string>;
   /** Its run (the deploy's report). */
   deploy?: string;
   cancel?: boolean;

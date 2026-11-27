@@ -41,6 +41,25 @@ export const HEALTH_WORDS: Record<Health, string> = {
 
 export const STATE_WORDS: Record<State, string> = { running: "进行中", done: "已完成", failed: "失败" };
 
+/**
+ * The preview's parts (S84: CameywareServer scripts/parts.ts, deployed.json's keys), in the order a deploy takes them,
+ * and what each is called here.
+ */
+export const PART_NAMES: [string, string][] = [
+  ["app", "禄命秘解（接口、网页版和管理后台）"],
+  ["auth", "账号服务"],
+  ["website", "官网后端"],
+  ["cmsapi", "CMS 后端"],
+  ["cms", "CMS 编辑器"],
+  ["site", "官网网页"],
+  ["monitor", "部署监控后端"],
+  ["page", "部署监控网页"],
+  ["agent", "服务器上的监听程序"],
+];
+export const partName = (k: string) => PART_NAMES.find(([key]) => key === k)?.[1] ?? k;
+/** A part's value as read: a version as it is, a commit by its first 8. */
+export const partValue = (v: string) => (/^[0-9a-f]{12,}$/.test(v) ? v.slice(0, 8) : v);
+
 /** A deploy asked for from the page (S83). */
 export const JOB_WORDS: Record<JobState, string> = {
   queued: "等部署电脑接手",

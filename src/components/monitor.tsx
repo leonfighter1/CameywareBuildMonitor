@@ -99,7 +99,13 @@ function EnvTab({ env, overview, now }: { env: Env; overview: Overview; now: num
   const { services, running, typical } = overview.envs[env];
   return (
     <Stack gap="lg">
-      <DeployPanel env={env} d={overview} now={now} typical={typical} />
+      <DeployPanel
+        env={env}
+        d={overview}
+        now={now}
+        typical={typical}
+        deployed={overview.envs[env].deployed}
+      />
       {running ? (
         <RunCard run={running} now={now} typical={typical} />
       ) : (

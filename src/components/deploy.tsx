@@ -3,6 +3,7 @@ import {
   Alert,
   Button,
   Card,
+  Checkbox,
   Chip,
   Group,
   Modal,
@@ -19,7 +20,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { useEffect, useRef, useState } from "react";
 import { ApiError, ops } from "@/lib/api";
 import type { Deploying, Env, Head, Job, JobsPage, JobState } from "@/lib/types";
-import { ago, ENV_NAMES, JOB_WORDS, span, when } from "@/lib/words";
+import { ago, ENV_NAMES, JOB_WORDS, PART_NAMES, partName, partValue, span, when } from "@/lib/words";
 import { JobBadge, ToneBadge } from "./bits";
 
 /**
@@ -131,6 +132,72 @@ function Output({ lines }: { lines: string[] }) {
   );
 }
 
+/** A part in the plan (S84): what runs, what a deploy would make it, whether that moves. */
+interface PlanRow {
+  key: string;
+  running?: string;
+  next: string;
+  changed: boolean;
+}
+
+/** The preview's parts: what runs (its deployed.json) against the runner's values at the commits. */
+function planOf(deployed?: Record<string, string>, parts?: Record<string, string>): PlanRow[] {
+  if (!parts) return [];
+  return PART_NAMES.filter(([k]) => parts[k]).map(([k]) => ({
+    key: k,
+    running: deployed?.[k],
+    next: parts[k]!,
+    changed: deployed?.[k] !== parts[k],
+  }));
+}
+
+/**
+ * The plan, a box per part (S84, the owner: 「如果当前repo没有commit也就没有部署的必要了。部署可以自行选择」): a part that
+ * moved is ticked at first and can be held back; one that didn't can't be ticked (there is nothing to do).
+ */
+function Plan({
+  rows,
+  chosen,
+  onPick,
+}: {
+  rows: PlanRow[];
+  chosen: Set<string>;
+  onPick?: (key: string, on: boolean) => void;
+}) {
+  return (
+    <Stack gap={8} data-testid="plan">
+      {rows.map((p) => (
+        <Checkbox
+          key={p.key}
+          checked={chosen.has(p.key)}
+          disabled={!p.changed || !onPick}
+          onChange={(e) => onPick?.(p.key, e.currentTarget.checked)}
+          label={
+            <Group gap={6} wrap="wrap" component="span">
+              <Text size="sm" fw={600} component="span">
+                {partName(p.key)}
+              </Text>
+              {p.changed ? (
+                <ToneBadge tone="info">有更新</ToneBadge>
+              ) : (
+                <ToneBadge tone="muted">不变</ToneBadge>
+              )}
+            </Group>
+          }
+          description={
+            <Text size="xs" className="cy-mono" c="var(--t-text-secondary)" component="span">
+              {p.changed
+                ? `${p.running ? partValue(p.running) : "还没部署过"} → ${partValue(p.next)}`
+                : partValue(p.next)}
+            </Text>
+          }
+          data-testid={`part-${p.key}`}
+        />
+      ))}
+    </Stack>
+  );
+}
+
 /** How long a job took (or has taken), from when its runner took it. */
 const took = (j: Job, now: number) =>
   span((j.ended ? Date.parse(j.ended) : now) - Date.parse(j.started ?? j.requested));
@@ -201,6 +268,7 @@ function JobCard({
         <Text size="xs" c="var(--t-text-secondary)">
           {[
             `${job.by} 在 ${when(job.requested)} 发起`,
+            job.only && `只部署 ${job.only.map(partName).join("、")}`,
             job.machine && `部署电脑 ${job.machine}`,
             job.state !== "queued" && `${live ? "已用时" : "用时"} ${took(job, now)}`,
           ]
@@ -247,18 +315,43 @@ export function DeployPanel({
   d,
   now,
   typical,
+  deployed,
 }: {
   env: Env;
   d: Deploying;
   now: number;
   typical?: number | null;
+  /** What each part runs in [env] now (S84). */
+  deployed?: Record<string, string>;
 }) {
   const qc = useQueryClient();
   const [asking, ask] = useDisclosure(false);
   const [typed, setTyped] = useState("");
   const [mine, setMine] = useState<string>();
+  const r = d.runner;
+  // The preview's plan (S84): the parts that moved are ticked again whenever which ones moved changes.
+  const rows = env === "preview" ? planOf(deployed, r?.parts) : [];
+  const moved = rows
+    .filter((p) => p.changed)
+    .map((p) => p.key)
+    .join(",");
+  const [chosen, setChosen] = useState(() => new Set(moved ? moved.split(",") : []));
+  useEffect(() => setChosen(new Set(moved ? moved.split(",") : [])), [moved]);
+  const pick = (key: string, on: boolean) =>
+    setChosen((s) => {
+      const next = new Set(s);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  const picked = rows.filter((p) => chosen.has(p.key));
   const start = useMutation({
-    mutationFn: () => ops<Job>("/jobs", { env, ...(env === "production" && { confirm: typed.trim() }) }),
+    mutationFn: () =>
+      ops<Job>("/jobs", {
+        env,
+        ...(env === "production" && { confirm: typed.trim() }),
+        ...(rows.length > 0 && { only: picked.map((p) => p.key) }),
+      }),
     onSuccess: (j) => {
       setMine(j.id);
       ask.close();
@@ -267,9 +360,14 @@ export function DeployPanel({
       void qc.invalidateQueries({ queryKey: ["jobs"] });
     },
   });
-  const reason = whyNot(env, d);
+  const reason =
+    whyNot(env, d) ??
+    (rows.length > 0 && !moved
+      ? "每个部分都和预览站上运行的一样，没有要部署的。"
+      : rows.length > 0 && picked.length === 0
+        ? "至少勾选一项要部署的部分。"
+        : undefined);
   const shown = d.job?.env === env ? d.job.id : mine;
-  const r = d.runner;
   return (
     <>
       <Card data-testid="deploy">
@@ -302,6 +400,7 @@ export function DeployPanel({
               data-testid="deploy-ask"
             >
               部署到{ENV_NAMES[env]}
+              {rows.length > 0 && picked.length > 0 ? `（${picked.length} 项）` : ""}
             </Button>
           </Group>
           {reason && (
@@ -311,23 +410,52 @@ export function DeployPanel({
           )}
           {/* While this environment's job goes on, its own card says what it deploys. */}
           {r && d.job?.env !== env && (
-            <Stack gap="xs">
-              <Text size="xs" c="var(--t-text-muted)">
-                {env === "production"
-                  ? "正式站只部署已经推送到 GitHub 的提交。"
-                  : "部署每个仓库已经提交的版本：没提交的改动不会带上，还没推送到 GitHub 的提交会带上。"}
-              </Text>
-              <Commits repos={r.repos} now={now} live />
+            <Stack gap="md">
+              {rows.length > 0 && (
+                <Stack gap="xs">
+                  <Text size="xs" c="var(--t-text-muted)">
+                    要部署的部分：有更新的已经勾上，不想这次部署的可以取消；不变的部分不用部署。
+                  </Text>
+                  <Plan rows={rows} chosen={chosen} {...(d.deploys.allowed && { onPick: pick })} />
+                </Stack>
+              )}
+              <Stack gap="xs">
+                <Text size="xs" c="var(--t-text-muted)">
+                  {env === "production"
+                    ? "正式站只部署已经推送到 GitHub 的提交。"
+                    : "各仓库的提交：只部署已经提交的版本，没提交的改动不会带上，还没推送到 GitHub 的提交会带上。"}
+                </Text>
+                <Commits repos={r.repos} now={now} live />
+              </Stack>
             </Stack>
           )}
         </Stack>
         <Modal opened={asking} onClose={ask.close} title={`部署到${ENV_NAMES[env]}？`} size="lg">
           <Stack gap="md">
             <Text size="sm">
-              部署电脑 {r?.machine} 会用下面这些提交构建并部署
-              {typical ? `，通常要 ${span(typical)}` : ""}。
+              部署电脑 {r?.machine} 会构建并部署
+              {rows.length > 0
+                ? `下面这 ${picked.length} 项，其余的保持现在运行的版本`
+                : "各仓库已经提交的版本"}
+              {typical && rows.length === 0 ? `，通常要 ${span(typical)}` : ""}。
             </Text>
-            {r && <Commits repos={r.repos} now={now} live />}
+            {rows.length > 0 ? (
+              <Stack gap={6} data-testid="deploy-parts">
+                {picked.map((p) => (
+                  <Group key={p.key} gap="xs" wrap="wrap">
+                    <IconRocket size={14} color="var(--t-accent)" />
+                    <Text size="sm" fw={600}>
+                      {partName(p.key)}
+                    </Text>
+                    <Text size="xs" className="cy-mono" c="var(--t-text-secondary)">
+                      {p.running ? partValue(p.running) : "还没部署过"} → {partValue(p.next)}
+                    </Text>
+                  </Group>
+                ))}
+              </Stack>
+            ) : (
+              r && <Commits repos={r.repos} now={now} live />
+            )}
             {r?.repos.some((x) => x.changed > 0) && (
               <Alert color="yellow">有还没提交的改动：这次不会部署它们。</Alert>
             )}
@@ -402,6 +530,7 @@ function JobRow({ job, now }: { job: Job; now: number }) {
         <Text size="xs" c="var(--t-text-secondary)">
           {[
             `${job.by} 发起`,
+            job.only ? `只部署 ${job.only.map(partName).join("、")}` : "有更新的都部署",
             job.machine && `部署电脑 ${job.machine}`,
             job.started && `用时 ${took(job, now)}`,
           ]

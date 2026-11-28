@@ -140,7 +140,7 @@ export function RunCard({
           {run.deploy?.parts && (
             <Text size="xs" c="var(--t-text-secondary)" data-testid="run-parts">
               部署：{run.deploy.parts.map(partName).join("、")}
-              {live && !typical && "（以前没部署过这些部分，进度按步骤算）"}
+              {live && !typical && "（还没有部署同样部分的记录，进度按步骤算）"}
             </Text>
           )}
           {run.deploy && (

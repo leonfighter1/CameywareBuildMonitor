@@ -101,7 +101,7 @@ function SignIn() {
  * time (the owner, 2026-11-27: 「整个UI还是显得内容太多了」): 部署记录 (every deploy the server saw) or 从页面发起的部署.
  */
 function EnvTab({ env, overview, now }: { env: Env; overview: Overview; now: number }) {
-  const { services, running, estimate } = overview.envs[env];
+  const { services, running, estimate, overlap } = overview.envs[env];
   const [records, setRecords] = useState<"runs" | "jobs">("runs");
   const canStop = overview.deploys.allowed;
   return (
@@ -113,7 +113,7 @@ function EnvTab({ env, overview, now }: { env: Env; overview: Overview; now: num
         going={!!running?.deploy?.open}
         deployed={overview.envs[env].deployed}
       />
-      {running && <RunCard run={running} now={now} estimate={estimate} canStop={canStop} />}
+      {running && <RunCard run={running} now={now} estimate={estimate} overlap={overlap} canStop={canStop} />}
       <Title order={2} fz={18}>
         服务
       </Title>
@@ -133,7 +133,7 @@ function EnvTab({ env, overview, now }: { env: Env; overview: Overview; now: num
         />
       </Group>
       {records === "runs" ? (
-        <RunsList env={env} now={now} estimate={estimate} canStop={canStop} />
+        <RunsList env={env} now={now} estimate={estimate} overlap={overlap} canStop={canStop} />
       ) : (
         <JobsList env={env} now={now} />
       )}

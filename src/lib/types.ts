@@ -93,6 +93,8 @@ export interface Overview extends Deploying {
       services: ServiceView[];
       running: Run | null;
       estimate?: Expected[] | null;
+      /** How much the categories of the deploy going on overlap (S87: two lanes at once), 1 before any. */
+      overlap?: number;
       deployed?: Record<string, string>;
     }
   >;

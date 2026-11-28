@@ -56,13 +56,15 @@ export function spanOf(steps: readonly Step[], now: number): number {
 
 /**
  * [run]'s progress at [now]: each of [estimate]'s categories (and any other its steps have), waiting until a step of it
- * begins, done once its steps have ended and a later step of another has begun (健康检查: with the run); one going on fills
+ * begins, done once its step has ended (健康检查: with the run); one going on fills
  * by its time against its 通常 (a category never timed: against a minute, then past it), never past 95% until it ends.
  */
 export function progressOf(
   run: Run,
   estimate: readonly Expected[] | null | undefined,
   now: number,
+  /** How much its categories overlap (S87: two lanes at once; the monitor's, 1 before any). */
+  overlap = 1,
 ): Progress {
   const live = run.state === "running";
   const end = live ? now : Date.parse(run.ended ?? run.started);
@@ -80,29 +82,25 @@ export function progressOf(
     const base = { category, name: categoryName(category), took, typical };
     if (!steps.length) return { ...base, state: live ? "waiting" : "done", share: live ? 0 : 100 };
     if (steps.some((s) => s.state === "failed")) return { ...base, state: "failed", share: 100 };
-    const lastEnd = Math.max(...steps.map((s) => (s.ended ? Date.parse(s.ended) : Infinity)));
-    const later = run.steps.some((s) => s.part !== category && Date.parse(s.started) >= lastEnd);
-    // 健康检查 comes once for each group a deploy starts: done only with the deploy.
-    if (!live || (lastEnd !== Infinity && later && category !== "health"))
-      return { ...base, state: "done", share: 100 };
+    // A part's block is one step (S86): done when it ends, whatever runs beside it (S87). 健康检查 comes once for each
+    // group a deploy starts: done only with the deploy.
+    const going = steps.some((s) => s.state === "running");
+    if (!live || (!going && category !== "health")) return { ...base, state: "done", share: 100 };
     const of = typical ?? Math.max(UNKNOWN_MS, took * 1.25);
     return { ...base, state: "running", share: Math.min(MOST, (took / of) * 100) };
   });
   if (!live) return { overall: 100, left: 0, categories };
-  // What's done over what's done and still to come: a category done by its own time, one going on by its time and at
-  // least what is left of its 通常, one waiting by its 通常.
-  let done = 0;
-  let all = 0;
+  // The time still to come: what is left of each category going on (at least a little past its time), each waiting one's
+  // 通常; divided by how much they overlap (S87), it is about how long is left. The whole: the time so far over that and
+  // the time still to come.
+  let toCome = 0;
   for (const c of categories) {
     const usual = c.typical ?? UNKNOWN_MS;
-    if (c.state === "done" || c.state === "failed") {
-      done += c.took;
-      all += c.took;
-    } else if (c.state === "running") {
-      done += c.took;
-      all += Math.max(usual, c.took / (MOST / 100));
-    } else all += usual;
+    if (c.state === "running") toCome += Math.max(usual, c.took / (MOST / 100)) - c.took;
+    else if (c.state === "waiting") toCome += usual;
   }
-  const overall = all > 0 ? Math.min(99, (done / all) * 100) : 0;
-  return { overall, left: Math.max(0, all - done), categories };
+  const left = toCome / Math.max(1, overlap);
+  const took = Math.max(0, now - Date.parse(run.started));
+  const overall = took + left > 0 ? Math.min(99, (took / (took + left)) * 100) : 0;
+  return { overall, left, categories };
 }

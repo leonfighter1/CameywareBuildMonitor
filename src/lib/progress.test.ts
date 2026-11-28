@@ -41,7 +41,7 @@ describe("a deploy's progress", () => {
       ["账号服务", "waiting", 0],
       ["健康检查", "waiting", 0],
     ]);
-    expect(p.overall).toBe(0);
+    expect(p.overall).toBeLessThan(1);
     expect(p.left).toBe(410_000);
   });
 
@@ -55,6 +55,14 @@ describe("a deploy's progress", () => {
     // Done 20 + 150 s of 20 + 300 + 30 + 60 s.
     expect(p.overall).toBeCloseTo((170 / 410) * 100, 5);
     expect(p.left).toBe(240_000);
+    // Two lanes at once (S87): the time still to come counts half.
+    const both = progressOf(run(steps), estimate, at(170), 2);
+    expect(both.left).toBe(120_000);
+    expect(both.overall).toBeCloseTo((170 / 290) * 100, 5);
+    // A part is done when its step ends, whatever runs beside it.
+    expect(progressOf(run([step("App", "app", 0, 100)]), estimate, at(120)).categories[1]).toMatchObject({
+      state: "done",
+    });
     // A second later, a little further: it moves with time, not by steps.
     expect(progressOf(run(steps), estimate, at(171)).overall).toBeGreaterThan(p.overall);
   });

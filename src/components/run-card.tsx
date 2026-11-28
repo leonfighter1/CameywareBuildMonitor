@@ -77,17 +77,20 @@ export function RunCard({
   run,
   now = Date.now(),
   estimate,
+  overlap = 1,
   canStop = false,
 }: {
   run: Run;
   now?: number;
   estimate?: Expected[] | null;
+  /** How much its categories overlap (S87), the monitor's. */
+  overlap?: number;
   canStop?: boolean;
 }) {
   const [steps, toggle] = useDisclosure(false);
   const took = (run.ended ? Date.parse(run.ended) : now) - Date.parse(run.started);
   const live = run.state === "running";
-  const p = progressOf(run, estimate, now);
+  const p = progressOf(run, estimate, now, overlap);
   const overall = useGlide(p.overall);
   const going = run.steps.filter((s) => s.state === "running" && s.kind === "local").map(stepTitle);
   return (

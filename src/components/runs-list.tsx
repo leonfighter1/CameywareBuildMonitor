@@ -18,11 +18,13 @@ export function RunsList({
   env,
   now,
   estimate,
+  overlap,
   canStop = false,
 }: {
   env: Env;
   now: number;
   estimate?: Expected[] | null;
+  overlap?: number;
   canStop?: boolean;
 }) {
   const [state, setState] = useState<State | "">("");
@@ -97,7 +99,7 @@ export function RunsList({
           .filter((r) => state === "running" || r.state !== "running")
           .map((r) =>
             r.state === "running" ? (
-              <RunCard key={r.id} run={r} now={now} estimate={estimate} canStop={canStop} />
+              <RunCard key={r.id} run={r} now={now} estimate={estimate} overlap={overlap} canStop={canStop} />
             ) : (
               <RunRow key={r.id} run={r} />
             ),

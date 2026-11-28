@@ -5,13 +5,14 @@ import { useEffect, useId, useState, type ReactNode } from "react";
  * A ring that fills to [value] (0–100; the owner, 2026-11-26: 「采用animated 圆盘的进度条，带有bouncing的动感」): from empty at
  * first, then each time it moves, springing past its mark and back (cyber.css .cy-ring-bar); neon from cyan to magenta,
  * or [tone]'s colour; while [live], an orbit spins round it. [children] is what it says in its middle; [label] names it
- * for a screen reader.
+ * for a screen reader. [smooth] (S86: a category's ring, moving each second): it glides to each mark instead.
  */
 export function Ring({
   value,
   size = 120,
   thickness = 10,
   live = false,
+  smooth = false,
   tone,
   label,
   children,
@@ -20,6 +21,7 @@ export function Ring({
   size?: number;
   thickness?: number;
   live?: boolean;
+  smooth?: boolean;
   /** A state's colour token instead of the neon pair: --t-success, --t-danger. */
   tone?: string;
   label: string;
@@ -55,7 +57,7 @@ export function Ring({
         </defs>
         <circle cx={c} cy={c} r={r} fill="none" stroke="var(--t-inset)" strokeWidth={thickness} />
         <circle
-          className="cy-ring-bar"
+          className={smooth ? "cy-ring-bar cy-ring-smooth" : "cy-ring-bar"}
           cx={c}
           cy={c}
           r={r}

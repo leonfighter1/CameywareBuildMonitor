@@ -1,22 +1,14 @@
 "use client";
-import { Button, Card, Group, Stack, Text } from "@mantine/core";
+import { Button, Card, Group, Progress, SimpleGrid, Stack, Text } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconCircleCheck, IconCircleX, IconListDetails } from "@tabler/icons-react";
-import type { Run, Step } from "@/lib/types";
-import {
-  bytes,
-  clock,
-  ENV_NAMES,
-  groupName,
-  machineLine,
-  partName,
-  span,
-  STATE_WORDS,
-  stepTitle,
-  when,
-} from "@/lib/words";
+import { useGlide } from "@/lib/glide";
+import { progressOf, type CategoryProgress } from "@/lib/progress";
+import type { Expected, Run, Step } from "@/lib/types";
+import { bytes, ENV_NAMES, groupName, machineLine, span, STATE_WORDS, stepTitle, when } from "@/lib/words";
 import { StateBadge, ToneBadge } from "./bits";
 import { Ring } from "./ring";
+import { StopButton } from "./stop";
 
 /** An upload's share of what it should reach (the last file of its kind); undefined when that isn't known. */
 const uploadShare = (s: Step) =>
@@ -73,87 +65,155 @@ function Figure({ name, value, accent }: { name: string; value: string; accent?:
 }
 
 /**
- * A run (the owner, 2026-11-26: 「界面中需要展示此次部署总时长是多久」, 「采用animated 圆盘的进度条，带有bouncing的动感……有点赛博
- * 风格」): its ring, filling towards how long its environment's deploys usually take ([typical]; else by its steps), never
- * full until it ends; its whole time (总时长; S80: from the deploying computer's first step) and, going on, about how
- * long is left; who deployed it from which computer; its steps, the local ones marked 本机. [now] for one going on.
+ * A deploy going on (S86; the owner, 2026-11-28: 「设置个整体进度条……动态的」, 「提前把各个圆盘展现出来，CMS是cms的，后端是
+ * 后端的等等」, 「把所有健康检查归到一类圆盘」, 「随着时间流逝，圆盘进度要有慢慢调整的动态表现」): one bar for the whole, by
+ * the time done against the time done and still to come ([estimate]: each category's 通常, the monitor's); a ring for
+ * each category it goes through, shown from the start, each filling by its own time; both gliding (useGlide) and
+ * moving each second. Its time and about how long is left; 停止 for the superadmin ([canStop]), whether it was asked for
+ * from the page or run in a terminal; who deployed it from which computer; its steps behind 步骤. [now] for one going
+ * on. Before S80 its ring filled towards the environment's 通常 (the owner, 2026-11-26: 「采用animated 圆盘的进度条」).
  */
 export function RunCard({
   run,
   now = Date.now(),
-  typical,
+  estimate,
+  canStop = false,
 }: {
   run: Run;
   now?: number;
-  typical?: number | null;
+  estimate?: Expected[] | null;
+  canStop?: boolean;
 }) {
+  const [steps, toggle] = useDisclosure(false);
   const took = (run.ended ? Date.parse(run.ended) : now) - Date.parse(run.started);
   const live = run.state === "running";
-  const ended = run.steps.filter((s) => s.state !== "running").length;
-  const share = !live
-    ? 100
-    : typical
-      ? Math.min(97, (took / typical) * 100)
-      : Math.min(97, Math.max(3, (ended / (run.steps.length + 1)) * 100));
-  const left = live && typical && typical > took ? typical - took : undefined;
-  // Longer than usual (its ring stays at 97% till it ends): by how much, not a 预计还要 that ran out.
-  const over = live && typical && took > typical ? took - typical : undefined;
+  const p = progressOf(run, estimate, now);
+  const overall = useGlide(p.overall);
+  const going = run.steps.filter((s) => s.state === "running" && s.kind === "local").map(stepTitle);
   return (
     <Card className={live ? "cy-live" : undefined} data-testid="run">
-      <Group align="center" gap="xl" wrap="wrap">
-        <Ring
-          value={share}
-          live={live}
-          size={128}
-          tone={
-            run.state === "done" ? "var(--t-success)" : run.state === "failed" ? "var(--t-danger)" : undefined
-          }
-          label={`${ENV_NAMES[run.env]}的部署 ${live ? `${Math.round(share)}%` : STATE_WORDS[run.state]}`}
-        >
-          <Text className="cy-mono" fz={live ? 26 : 18} fw={800}>
-            <span key={live ? Math.round(share) : run.state} className="cy-bump">
-              {live ? `${Math.round(share)}%` : STATE_WORDS[run.state]}
-            </span>
-          </Text>
-          <Text size="xs" className="cy-mono" c="var(--t-text-secondary)">
-            {clock(took)}
-          </Text>
-        </Ring>
-        <Stack gap="sm" style={{ flex: 1, minWidth: 240 }}>
-          <Group justify="space-between" wrap="wrap" gap="xs">
-            <Group gap="xs">
-              <Text fw={700} fz="lg">
-                {ENV_NAMES[run.env]}的部署
-              </Text>
-              <StateBadge state={run.state} />
-            </Group>
+      <Stack gap="md">
+        <Group justify="space-between" wrap="wrap" gap="xs">
+          <Group gap="xs">
+            <Text fw={700} fz="lg">
+              {ENV_NAMES[run.env]}的部署
+            </Text>
+            <StateBadge state={run.state} />
+            {run.deploy?.stopping && <ToneBadge tone="warning">正在停止</ToneBadge>}
+          </Group>
+          <Group gap="sm">
             <Text size="sm" c="var(--t-text-secondary)">
               {when(run.started)} 开始
             </Text>
+            {live && canStop && run.deploy?.open && (
+              <StopButton
+                path={`/deploys/${run.deploy.id}/stop`}
+                asked={!!run.deploy.stopping}
+                testId="run-stop"
+              />
+            )}
           </Group>
-          <Group gap="xl" wrap="wrap" data-testid="run-total">
-            <Figure name={live ? "已用时" : "总时长"} value={span(took)} />
-            {typical ? <Figure name="通常" value={span(typical)} /> : null}
-            {left !== undefined && <Figure name="预计还要" value={`约 ${span(left)}`} accent />}
-            {over !== undefined && <Figure name="比通常多" value={span(over)} accent />}
-          </Group>
-          {run.deploy?.parts && (
-            <Text size="xs" c="var(--t-text-secondary)" data-testid="run-parts">
-              部署：{run.deploy.parts.map(partName).join("、")}
-              {live && !typical && "（还没有部署同样部分的记录，进度按步骤算）"}
+        </Group>
+        <Stack gap={6}>
+          <Group justify="space-between" gap="xs">
+            <Text size="sm" fw={600}>
+              整体进度
             </Text>
-          )}
-          {run.deploy && (
+            <Text className="cy-mono" fw={800} fz="lg" data-testid="run-overall">
+              {Math.round(overall)}%
+            </Text>
+          </Group>
+          <Progress
+            value={overall}
+            size="lg"
+            radius="xl"
+            color="cyan"
+            striped={live}
+            animated={live}
+            transitionDuration={900}
+            aria-label={`${ENV_NAMES[run.env]}的部署 ${Math.round(overall)}%`}
+          />
+        </Stack>
+        <Group gap="xl" wrap="wrap" data-testid="run-total">
+          <Figure name={live ? "已用时" : "总时长"} value={span(took)} />
+          {live && <Figure name="预计还要" value={`约 ${span(p.left)}`} accent />}
+          {going.length > 0 && <Figure name="正在" value={going.join("、")} />}
+        </Group>
+        <SimpleGrid cols={{ base: 3, sm: 5, md: 6, lg: 8 }} spacing="sm" data-testid="run-categories">
+          {p.categories.map((c) => (
+            <CategoryRing key={c.category} c={c} />
+          ))}
+        </SimpleGrid>
+        <Group justify="space-between" wrap="wrap" gap="xs">
+          {run.deploy ? (
             <Text size="xs" c="var(--t-text-secondary)" data-testid="run-machine">
               {run.deploy.by} 在本机部署：{machineLine(run.deploy.machine)}
             </Text>
+          ) : (
+            <span />
           )}
-        </Stack>
-      </Group>
-      <Steps run={run} now={now} />
+          <Button
+            size="xs"
+            variant="subtle"
+            leftSection={<IconListDetails size={14} />}
+            onClick={toggle.toggle}
+            aria-expanded={steps}
+          >
+            步骤（{run.steps.length}）
+          </Button>
+        </Group>
+      </Stack>
+      {steps && <Steps run={run} now={now} />}
     </Card>
   );
 }
+
+/**
+ * A category's ring (S86): waiting (its 通常 said), its % going on (its time against its 通常), 完成 or 失败; gliding to
+ * each new share.
+ */
+function CategoryRing({ c }: { c: CategoryProgress }) {
+  const share = useGlide(c.share);
+  const tone = c.state === "done" ? "var(--t-success)" : c.state === "failed" ? "var(--t-danger)" : undefined;
+  const words =
+    c.state === "waiting"
+      ? c.typical
+        ? `通常 ${span(c.typical)}`
+        : "还没有记录"
+      : c.state === "running" && c.typical
+        ? `${span(c.took)} / 通常 ${span(c.typical)}`
+        : span(c.took);
+  return (
+    <Stack align="center" gap={4} data-testid="run-category">
+      <Ring
+        value={share}
+        size={84}
+        thickness={8}
+        live={c.state === "running"}
+        smooth
+        {...(tone && { tone })}
+        label={`${c.name} ${CATEGORY_WORDS[c.state] ?? `${Math.round(share)}%`}`}
+      >
+        <Text className="cy-mono" fz={c.state === "running" ? 18 : 14} fw={800}>
+          {CATEGORY_WORDS[c.state] ?? `${Math.round(share)}%`}
+        </Text>
+      </Ring>
+      <Text size="sm" fw={600} ta="center">
+        {c.name}
+      </Text>
+      <Text size="xs" c="var(--t-text-secondary)" ta="center" className="cy-digits">
+        {words}
+      </Text>
+    </Stack>
+  );
+}
+
+/** What a category's ring says in place of its % (going on: its %). */
+const CATEGORY_WORDS: Partial<Record<CategoryProgress["state"], string>> = {
+  waiting: "等待",
+  done: "完成",
+  failed: "失败",
+};
 
 /** A run's steps, each with its mark and time, and what runs after it (上线后). */
 function Steps({ run, now }: { run: Run; now: number }) {
@@ -225,6 +285,7 @@ export function RunRow({ run }: { run: Run }) {
       <Group justify="space-between" wrap="wrap" gap="xs">
         <Group gap="sm" wrap="wrap">
           <StateBadge state={run.state} />
+          {run.deploy?.stopped && <ToneBadge tone="warning">已停止</ToneBadge>}
           <Text
             className="cy-digits"
             fw={700}

@@ -5,16 +5,26 @@ import { IconSearch } from "@tabler/icons-react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ops } from "@/lib/api";
-import type { Env, RunsPage, State } from "@/lib/types";
+import type { Env, Expected, RunsPage, State } from "@/lib/types";
 import { STATE_WORDS } from "@/lib/words";
 import { RunCard, RunRow } from "./run-card";
 
 /**
  * An environment's runs: in pages, by state with each one's count, searched by file, service or version as one types
- * (300 ms) and at once on Enter. A run is a log: none is deleted here (90 days kept). [typical]: the environment's, so a
- * run going on fills its ring as the one at the top does (the owner, 2026-11-27: 「这两个进度显示不一样」).
+ * (300 ms) and at once on Enter. A run is a log: none is deleted here (90 days kept). [estimate]: the environment's (S86),
+ * so a run going on shows as the one at the top does (the owner, 2026-11-27: 「这两个进度显示不一样」); [canStop] the same.
  */
-export function RunsList({ env, now, typical }: { env: Env; now: number; typical?: number | null }) {
+export function RunsList({
+  env,
+  now,
+  estimate,
+  canStop = false,
+}: {
+  env: Env;
+  now: number;
+  estimate?: Expected[] | null;
+  canStop?: boolean;
+}) {
   const [state, setState] = useState<State | "">("");
   const [words, setWords] = useState("");
   const [typed] = useDebouncedValue(words.trim(), 300);
@@ -87,7 +97,7 @@ export function RunsList({ env, now, typical }: { env: Env; now: number; typical
           .filter((r) => state === "running" || r.state !== "running")
           .map((r) =>
             r.state === "running" ? (
-              <RunCard key={r.id} run={r} now={now} typical={typical} />
+              <RunCard key={r.id} run={r} now={now} estimate={estimate} canStop={canStop} />
             ) : (
               <RunRow key={r.id} run={r} />
             ),

@@ -33,6 +33,8 @@ export interface Step {
   speed?: number;
   /** A local step's words (S80). */
   name?: string;
+  /** Its category (S86): a part (PART_NAMES' keys), health (健康检查) or prep (准备); none for the rest. */
+  part?: string;
 }
 
 /** The computer a deploy ran on (S80): each its own. */
@@ -62,7 +64,18 @@ export interface Run {
     seen: string;
     /** The parts it deploys (S84), what its 通常 is measured against. */
     parts?: string[];
+    /** Those deployed again, unchanged (S86); its process, which 停止 ends; 停止 asked, and how it ended. */
+    again?: string[];
+    pid?: number;
+    stopping?: boolean;
+    stopped?: boolean;
   };
+}
+
+/** A category a deploy goes through, and how long it usually takes (S86: the monitor's categories.ts), ms. */
+export interface Expected {
+  category: string;
+  typical: number | null;
 }
 
 export interface Agent {
@@ -72,14 +85,14 @@ export interface Agent {
 
 export interface Overview extends Deploying {
   agent: Agent;
-  /** [typical]: how long its deploys usually take, ms (S80); null before any. */
+  /** [estimate]: the categories the deploy going on goes through, and their 通常 (S86). */
   /** [deployed]: what each part runs now (S84: its groups' deployed.json; PART_NAMES' keys). */
   envs: Record<
     Env,
     {
       services: ServiceView[];
       running: Run | null;
-      typical?: number | null;
+      estimate?: Expected[] | null;
       deployed?: Record<string, string>;
     }
   >;

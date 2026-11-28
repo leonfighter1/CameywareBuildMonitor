@@ -24,6 +24,7 @@ import { ApiError, ops } from "@/lib/api";
 import type { Deploying, Env, Head, Job, JobsPage, JobState } from "@/lib/types";
 import { ago, ENV_NAMES, JOB_WORDS, PART_NAMES, partName, partValue, span, when } from "@/lib/words";
 import { JobBadge, ToneBadge } from "./bits";
+import { problem, StopButton } from "./stop";
 
 /**
  * Deploys from the page (禄命秘解's tech plan S83, the owner, 2026-11-27: 「增加从页面deploy的功能。而不是每次都要从VS里
@@ -45,17 +46,6 @@ function whyNot(env: Env, d: Deploying): string | undefined {
     return "部署电脑不在线。在部署电脑上运行一次 npm run runner:install（C:\\CameywareCorpApps\\server），以后每次登录它会自己启动。";
   if (d.job) return `${ENV_NAMES[d.job.env]}的部署正在进行：一次只能一个。`;
   return undefined;
-}
-
-/** A refused ask, in words. */
-function problem(e: unknown): string {
-  if (!(e instanceof ApiError)) return "现在连不上部署监控，请稍后再试。";
-  if (e.status === 403) return "只有超级管理员可以从页面部署。";
-  if (e.code === "busy") return "已经有一个部署在进行：一次只能一个。";
-  if (e.code === "offline") return "部署电脑不在线，这次没有发起。";
-  if (e.code === "production_off") return "正式站还不能从页面部署（要等正式站切换，S74.9）。";
-  if (e.code === "confirm") return "请输入「正式站」确认。";
-  return e.message;
 }
 
 /**
@@ -264,19 +254,10 @@ function JobCard({
   onHide?: () => void;
 }) {
   const qc = useQueryClient();
-  const [stopping, stop] = useDisclosure(false);
   const q = useQuery({
     queryKey: ["job", id],
     queryFn: () => jobQuery(id),
     refetchInterval: (x) => (x.state.data && !active(x.state.data) ? false : 2_000),
-  });
-  const cancel = useMutation({
-    mutationFn: () => ops<Job>(`/jobs/${id}/cancel`, {}),
-    onSuccess: () => {
-      stop.close();
-      void qc.invalidateQueries({ queryKey: ["job", id] });
-      void qc.invalidateQueries({ queryKey: ["overview"] });
-    },
   });
   const job = q.data;
   if (!job) return null;
@@ -290,20 +271,12 @@ function JobCard({
             <JobBadge state={job.state} />
           </Group>
           {live && allowed && (
-            <Button
-              size="xs"
-              color="red"
-              variant="light"
-              leftSection={<IconPlayerStop size={14} />}
-              onClick={() => {
-                cancel.reset();
-                stop.open();
-              }}
-              disabled={job.cancel}
-              data-testid="job-stop"
-            >
-              {job.cancel ? "正在停止…" : "停止"}
-            </Button>
+            <StopButton
+              path={`/jobs/${id}/cancel`}
+              asked={job.cancel}
+              testId="job-stop"
+              onDone={() => void qc.invalidateQueries({ queryKey: ["job", id] })}
+            />
           )}
           {!live && onHide && (
             <Button size="xs" variant="default" onClick={onHide}>
@@ -324,29 +297,6 @@ function JobCard({
         {job.repos && <Commits repos={job.repos} now={now} />}
         <Output lines={job.output ?? []} />
       </Stack>
-      <Modal opened={stopping} onClose={stop.close} title="停止这次部署？">
-        <Stack gap="md">
-          <Text size="sm">
-            部署电脑会马上结束这次部署的构建和上传。已经在服务器上开始的那一步（比如启动一组服务）可能会做完；这次部署记为已停止，之后可以重新部署。
-          </Text>
-          {cancel.error && <Alert color="red">{problem(cancel.error)}</Alert>}
-          <Group justify="flex-end">
-            <Button variant="default" onClick={stop.close}>
-              继续部署
-            </Button>
-            <Button
-              color="red"
-              variant="light"
-              leftSection={<IconPlayerStop size={16} />}
-              loading={cancel.isPending}
-              onClick={() => cancel.mutate()}
-              data-testid="job-stop-confirm"
-            >
-              停止部署
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
     </Card>
   );
 }
@@ -354,19 +304,20 @@ function JobCard({
 /**
  * An environment's 部署: the deploying computer (online or not, when it last said so), each repository's commit it
  * would deploy, the button (asked first: what goes, how long it usually takes; production also typed 正式站), and the
- * job asked for or going on. [typical]: how long the environment's deploys usually take.
+ * job asked for or going on. [going]: a deploy going on in [env] (S86: one from a terminal too), which the button's
+ * place names; its card below has 停止.
  */
 export function DeployPanel({
   env,
   d,
   now,
-  typical,
+  going = false,
   deployed,
 }: {
   env: Env;
   d: Deploying;
   now: number;
-  typical?: number | null;
+  going?: boolean;
   /** What each part runs in [env] now (S84). */
   deployed?: Record<string, string>;
 }) {
@@ -402,6 +353,7 @@ export function DeployPanel({
   });
   const reason =
     whyNot(env, d) ??
+    (going ? "正在部署：进度在下面，可以在那里停止。一次只能一个部署。" : undefined) ??
     (rows.length > 0 && picked.length === 0
       ? moved
         ? "至少勾选一项要部署的部分。"
@@ -484,7 +436,7 @@ export function DeployPanel({
               {rows.length > 0
                 ? `下面这 ${picked.length} 项，其余的保持现在运行的版本`
                 : "各仓库已经提交的版本"}
-              {typical && rows.length === 0 ? `，通常要 ${span(typical)}` : ""}。
+              。
             </Text>
             {rows.length > 0 ? (
               <Stack gap={6} data-testid="deploy-parts">

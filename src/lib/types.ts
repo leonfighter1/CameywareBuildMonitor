@@ -53,7 +53,16 @@ export interface Run {
   steps: Step[];
   versions?: Record<string, Record<string, string>>;
   /** The deploy's script's own report (S80): who ran it on which computer; open while it goes on. */
-  deploy?: { id: string; by: string; machine: Machine; open: boolean; state?: State; seen: string };
+  deploy?: {
+    id: string;
+    by: string;
+    machine: Machine;
+    open: boolean;
+    state?: State;
+    seen: string;
+    /** The parts it deploys (S84), what its 通常 is measured against. */
+    parts?: string[];
+  };
 }
 
 export interface Agent {

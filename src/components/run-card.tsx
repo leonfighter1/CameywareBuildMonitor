@@ -9,6 +9,7 @@ import {
   ENV_NAMES,
   groupName,
   machineLine,
+  partName,
   span,
   STATE_WORDS,
   stepTitle,
@@ -95,6 +96,8 @@ export function RunCard({
       ? Math.min(97, (took / typical) * 100)
       : Math.min(97, Math.max(3, (ended / (run.steps.length + 1)) * 100));
   const left = live && typical && typical > took ? typical - took : undefined;
+  // Longer than usual (its ring stays at 97% till it ends): by how much, not a 预计还要 that ran out.
+  const over = live && typical && took > typical ? took - typical : undefined;
   return (
     <Card className={live ? "cy-live" : undefined} data-testid="run">
       <Group align="center" gap="xl" wrap="wrap">
@@ -132,7 +135,14 @@ export function RunCard({
             <Figure name={live ? "已用时" : "总时长"} value={span(took)} />
             {typical ? <Figure name="通常" value={span(typical)} /> : null}
             {left !== undefined && <Figure name="预计还要" value={`约 ${span(left)}`} accent />}
+            {over !== undefined && <Figure name="比通常多" value={span(over)} accent />}
           </Group>
+          {run.deploy?.parts && (
+            <Text size="xs" c="var(--t-text-secondary)" data-testid="run-parts">
+              部署：{run.deploy.parts.map(partName).join("、")}
+              {live && !typical && "（以前没部署过这些部分，进度按步骤算）"}
+            </Text>
+          )}
           {run.deploy && (
             <Text size="xs" c="var(--t-text-secondary)" data-testid="run-machine">
               {run.deploy.by} 在本机部署：{machineLine(run.deploy.machine)}

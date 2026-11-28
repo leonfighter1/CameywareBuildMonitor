@@ -5,10 +5,12 @@ import {
   Card,
   Checkbox,
   Chip,
+  Grid,
   Group,
   Modal,
   Pagination,
   ScrollArea,
+  SimpleGrid,
   Stack,
   Text,
   TextInput,
@@ -153,47 +155,91 @@ function planOf(deployed?: Record<string, string>, parts?: Record<string, string
 
 /**
  * The plan, a box per part (S84, the owner: 「如果当前repo没有commit也就没有部署的必要了。部署可以自行选择」): a part that
- * moved is ticked at first and can be held back; one that didn't can't be ticked (there is nothing to do).
+ * moved is ticked at first and can be held back; one that didn't can be ticked too, and is deployed again (the owner,
+ * 2026-11-27: 「我希望还是能够manual deploy。但是可以多选几个去build」). 全选 ticks or clears them all; 只选有更新的 goes back
+ * to the parts that moved. [onChoose] (the superadmin's): the parts ticked now.
  */
 function Plan({
   rows,
   chosen,
-  onPick,
+  onChoose,
 }: {
   rows: PlanRow[];
   chosen: Set<string>;
-  onPick?: (key: string, on: boolean) => void;
+  onChoose?: (keys: string[]) => void;
 }) {
+  const ticked = rows.filter((p) => chosen.has(p.key)).map((p) => p.key);
+  const all = ticked.length === rows.length;
+  const moved = rows.filter((p) => p.changed).map((p) => p.key);
   return (
-    <Stack gap={8} data-testid="plan">
-      {rows.map((p) => (
+    <Stack gap="sm" data-testid="plan">
+      <Group justify="space-between" wrap="wrap" gap="xs">
         <Checkbox
-          key={p.key}
-          checked={chosen.has(p.key)}
-          disabled={!p.changed || !onPick}
-          onChange={(e) => onPick?.(p.key, e.currentTarget.checked)}
-          label={
-            <Group gap={6} wrap="wrap" component="span">
-              <Text size="sm" fw={600} component="span">
-                {partName(p.key)}
-              </Text>
-              {p.changed ? (
-                <ToneBadge tone="info">有更新</ToneBadge>
-              ) : (
-                <ToneBadge tone="muted">不变</ToneBadge>
-              )}
-            </Group>
-          }
-          description={
-            <Text size="xs" className="cy-mono" c="var(--t-text-secondary)" component="span">
-              {p.changed
-                ? `${p.running ? partValue(p.running) : "还没部署过"} → ${partValue(p.next)}`
-                : partValue(p.next)}
-            </Text>
-          }
-          data-testid={`part-${p.key}`}
+          label={`全选（已选 ${ticked.length}/${rows.length}）`}
+          checked={all}
+          indeterminate={ticked.length > 0 && !all}
+          disabled={!onChoose}
+          onChange={() => onChoose?.(all ? [] : rows.map((p) => p.key))}
+          data-testid="plan-all"
         />
-      ))}
+        {moved.length > 0 && (
+          <Button
+            size="compact-xs"
+            variant="subtle"
+            disabled={!onChoose}
+            onClick={() => onChoose?.(moved)}
+            data-testid="plan-moved"
+          >
+            只选有更新的（{moved.length}）
+          </Button>
+        )}
+      </Group>
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" verticalSpacing="sm">
+        {rows.map((p) => (
+          <Checkbox
+            key={p.key}
+            checked={chosen.has(p.key)}
+            disabled={!onChoose}
+            onChange={(e) =>
+              onChoose?.(e.currentTarget.checked ? [...ticked, p.key] : ticked.filter((k) => k !== p.key))
+            }
+            label={
+              <Group gap={6} wrap="wrap" component="span">
+                <Text size="sm" fw={600} component="span">
+                  {partName(p.key)}
+                </Text>
+                {p.changed ? (
+                  <ToneBadge tone="info">有更新</ToneBadge>
+                ) : chosen.has(p.key) ? (
+                  <ToneBadge tone="warning">重新部署</ToneBadge>
+                ) : (
+                  <ToneBadge tone="muted">不变</ToneBadge>
+                )}
+                <Text size="xs" className="cy-mono" c="var(--t-text-secondary)" component="span">
+                  {p.changed
+                    ? `${p.running ? partValue(p.running) : "还没部署过"} → ${partValue(p.next)}`
+                    : partValue(p.next)}
+                </Text>
+              </Group>
+            }
+            data-testid={`part-${p.key}`}
+          />
+        ))}
+      </SimpleGrid>
+    </Stack>
+  );
+}
+
+/** A column's heading in the 部署 card, and a line under it. */
+function Heading({ title, line }: { title: string; line: string }) {
+  return (
+    <Stack gap={2} mb="sm">
+      <Text size="sm" fw={700}>
+        {title}
+      </Text>
+      <Text size="xs" c="var(--t-text-muted)">
+        {line}
+      </Text>
     </Stack>
   );
 }
@@ -337,13 +383,7 @@ export function DeployPanel({
     .join(",");
   const [chosen, setChosen] = useState(() => new Set(moved ? moved.split(",") : []));
   useEffect(() => setChosen(new Set(moved ? moved.split(",") : [])), [moved]);
-  const pick = (key: string, on: boolean) =>
-    setChosen((s) => {
-      const next = new Set(s);
-      if (on) next.add(key);
-      else next.delete(key);
-      return next;
-    });
+  const choose = (keys: string[]) => setChosen(new Set(keys));
   const picked = rows.filter((p) => chosen.has(p.key));
   const start = useMutation({
     mutationFn: () =>
@@ -362,11 +402,11 @@ export function DeployPanel({
   });
   const reason =
     whyNot(env, d) ??
-    (rows.length > 0 && !moved
-      ? "每个部分都和预览站上运行的一样，没有要部署的。"
-      : rows.length > 0 && picked.length === 0
+    (rows.length > 0 && picked.length === 0
+      ? moved
         ? "至少勾选一项要部署的部分。"
-        : undefined);
+        : "每个部分都和预览站上运行的一样；要重新部署哪个，就勾上它。"
+      : undefined);
   const shown = d.job?.env === env ? d.job.id : mine;
   return (
     <>
@@ -390,44 +430,51 @@ export function DeployPanel({
                 )}
               </Group>
             </Stack>
-            <Button
-              leftSection={<IconRocket size={16} />}
-              disabled={!!reason}
-              onClick={() => {
-                start.reset();
-                ask.open();
-              }}
-              data-testid="deploy-ask"
-            >
-              部署到{ENV_NAMES[env]}
-              {rows.length > 0 && picked.length > 0 ? `（${picked.length} 项）` : ""}
-            </Button>
-          </Group>
-          {reason && (
-            <Text size="sm" c="var(--t-text-secondary)" data-testid="deploy-why">
-              {reason}
-            </Text>
-          )}
-          {/* While this environment's job goes on, its own card says what it deploys. */}
-          {r && d.job?.env !== env && (
-            <Stack gap="md">
-              {rows.length > 0 && (
-                <Stack gap="xs">
-                  <Text size="xs" c="var(--t-text-muted)">
-                    要部署的部分：有更新的已经勾上，不想这次部署的可以取消；不变的部分不用部署。
-                  </Text>
-                  <Plan rows={rows} chosen={chosen} {...(d.deploys.allowed && { onPick: pick })} />
-                </Stack>
-              )}
-              <Stack gap="xs">
-                <Text size="xs" c="var(--t-text-muted)">
-                  {env === "production"
-                    ? "正式站只部署已经推送到 GitHub 的提交。"
-                    : "各仓库的提交：只部署已经提交的版本，没提交的改动不会带上，还没推送到 GitHub 的提交会带上。"}
+            <Stack gap={4} align="flex-end" maw={380}>
+              <Button
+                leftSection={<IconRocket size={16} />}
+                disabled={!!reason}
+                onClick={() => {
+                  start.reset();
+                  ask.open();
+                }}
+                data-testid="deploy-ask"
+              >
+                部署到{ENV_NAMES[env]}
+                {rows.length > 0 && picked.length > 0 ? `（${picked.length} 项）` : ""}
+              </Button>
+              {reason && (
+                <Text size="xs" ta="right" c="var(--t-text-secondary)" data-testid="deploy-why">
+                  {reason}
                 </Text>
-                <Commits repos={r.repos} now={now} live />
-              </Stack>
+              )}
             </Stack>
+          </Group>
+          {/* While this environment's job goes on, its own card says what it deploys. The parts at the left, the
+              commits they come from at the right (the owner, 2026-11-27: 「部署部分，要排版合理。左右布局」). */}
+          {r && d.job?.env !== env && (
+            <Grid gap="xl">
+              {rows.length > 0 && (
+                <Grid.Col span={{ base: 12, md: 7 }}>
+                  <Heading
+                    title="要部署的部分"
+                    line="有更新的默认勾上；不变的勾上会重新部署（版本不变，重新发送并重启）。"
+                  />
+                  <Plan rows={rows} chosen={chosen} {...(d.deploys.allowed && { onChoose: choose })} />
+                </Grid.Col>
+              )}
+              <Grid.Col span={{ base: 12, md: rows.length > 0 ? 5 : 12 }}>
+                <Heading
+                  title="各仓库的提交"
+                  line={
+                    env === "production"
+                      ? "正式站只部署已经推送到 GitHub 的提交。"
+                      : "只部署已经提交的版本，没提交的改动不会带上。"
+                  }
+                />
+                <Commits repos={r.repos} now={now} live />
+              </Grid.Col>
+            </Grid>
           )}
         </Stack>
         <Modal opened={asking} onClose={ask.close} title={`部署到${ENV_NAMES[env]}？`} size="lg">
@@ -448,7 +495,9 @@ export function DeployPanel({
                       {partName(p.key)}
                     </Text>
                     <Text size="xs" className="cy-mono" c="var(--t-text-secondary)">
-                      {p.running ? partValue(p.running) : "还没部署过"} → {partValue(p.next)}
+                      {p.changed
+                        ? `${p.running ? partValue(p.running) : "还没部署过"} → ${partValue(p.next)}`
+                        : `${partValue(p.next)}（重新部署，版本不变）`}
                     </Text>
                   </Group>
                 ))}
@@ -498,7 +547,7 @@ export function DeployPanel({
   );
 }
 
-/** One job in the list: its state, when, who, the computer, how long, its commits; its output on 输出. */
+/** One job in the list, on a line: its state, when, who, what it deployed, how long; its commits and output on 输出. */
 function JobRow({ job, now }: { job: Job; now: number }) {
   const [open, toggle] = useDisclosure(false);
   const out = useQuery({
@@ -508,13 +557,22 @@ function JobRow({ job, now }: { job: Job; now: number }) {
     refetchInterval: (x) => (open && x.state.data && active(x.state.data) ? 2_000 : false),
   });
   return (
-    <Card data-testid="job-row">
+    <Card py="sm" data-testid="job-row">
       <Stack gap="xs">
         <Group justify="space-between" wrap="wrap" gap="xs">
-          <Group gap="xs">
+          <Group gap="sm" wrap="wrap" style={{ minWidth: 0, flex: 1 }}>
             <JobBadge state={job.state} />
             <Text size="sm" fw={600}>
               {when(job.requested)}
+            </Text>
+            <Text size="xs" c="var(--t-text-secondary)">
+              {[
+                job.by,
+                job.only ? `只部署 ${job.only.map(partName).join("、")}` : "有更新的都部署",
+                job.started && `用时 ${took(job, now)}`,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </Text>
           </Group>
           <Button
@@ -527,19 +585,14 @@ function JobRow({ job, now }: { job: Job; now: number }) {
             {open ? "收起输出" : "输出"}
           </Button>
         </Group>
-        <Text size="xs" c="var(--t-text-secondary)">
-          {[
-            `${job.by} 发起`,
-            job.only ? `只部署 ${job.only.map(partName).join("、")}` : "有更新的都部署",
-            job.machine && `部署电脑 ${job.machine}`,
-            job.started && `用时 ${took(job, now)}`,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </Text>
-        {job.repos && (
+        {open && job.repos && (
           <Text size="xs" className="cy-mono" c="var(--t-text-muted)" style={{ overflowWrap: "anywhere" }}>
-            {job.repos.map((r) => `${r.name} ${r.head.slice(0, 8)}`).join(" · ")}
+            {[
+              job.machine && `部署电脑 ${job.machine}`,
+              ...job.repos.map((r) => `${r.name} ${r.head.slice(0, 8)}`),
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </Text>
         )}
         {open && <Output lines={out.data?.output ?? []} />}
@@ -576,11 +629,12 @@ export function JobsList({ env, now }: { env: Env; now: number }) {
   const d = jobs.data;
   return (
     <Stack gap="md">
-      <Card>
-        <Stack gap="sm">
+      <Card py="sm">
+        <Group gap="sm" wrap="wrap">
           <TextInput
-            label="搜索"
-            placeholder="部署人、电脑、仓库或提交"
+            aria-label="搜索"
+            style={{ flex: 1, minWidth: 220 }}
+            placeholder="搜索部署人、电脑、仓库或提交"
             leftSection={<IconSearch size={16} />}
             value={words}
             onChange={(e) => {
@@ -610,7 +664,7 @@ export function JobsList({ env, now }: { env: Env; now: number }) {
               ))}
             </Group>
           </Chip.Group>
-        </Stack>
+        </Group>
       </Card>
       {d && d.items.length === 0 ? (
         <Card>

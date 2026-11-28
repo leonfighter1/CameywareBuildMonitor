@@ -7,7 +7,7 @@ import { useState } from "react";
 import { ops } from "@/lib/api";
 import type { Env, RunsPage, State } from "@/lib/types";
 import { STATE_WORDS } from "@/lib/words";
-import { RunCard } from "./run-card";
+import { RunCard, RunRow } from "./run-card";
 
 /**
  * An environment's runs: in pages, by state with each one's count, searched by file, service or version as one types
@@ -37,11 +37,12 @@ export function RunsList({ env, now, typical }: { env: Env; now: number; typical
   const d = runs.data;
   return (
     <Stack gap="md">
-      <Card>
-        <Stack gap="sm">
+      <Card py="sm">
+        <Group gap="sm" wrap="wrap">
           <TextInput
-            label="搜索"
-            placeholder="文件、服务、版本、电脑或部署人"
+            aria-label="搜索"
+            style={{ flex: 1, minWidth: 220 }}
+            placeholder="搜索文件、服务、版本、电脑或部署人"
             leftSection={<IconSearch size={16} />}
             value={words}
             onChange={(e) => {
@@ -71,7 +72,7 @@ export function RunsList({ env, now, typical }: { env: Env; now: number; typical
               ))}
             </Group>
           </Chip.Group>
-        </Stack>
+        </Group>
       </Card>
       {d && d.items.length === 0 ? (
         <Card>
@@ -80,10 +81,17 @@ export function RunsList({ env, now, typical }: { env: Env; now: number; typical
           </Text>
         </Card>
       ) : (
-        // The run going on is at the top of the page: here only when 进行中 is asked for.
+        // The run going on is at the top of the page: here only when 进行中 is asked for, with its ring; an ended one on a
+        // line of its own (RunRow).
         d?.items
           .filter((r) => state === "running" || r.state !== "running")
-          .map((r) => <RunCard key={r.id} run={r} now={now} typical={typical} />)
+          .map((r) =>
+            r.state === "running" ? (
+              <RunCard key={r.id} run={r} now={now} typical={typical} />
+            ) : (
+              <RunRow key={r.id} run={r} />
+            ),
+          )
       )}
       {d && Math.ceil(d.total / d.per_page) > 1 && (
         <Group justify="flex-end">

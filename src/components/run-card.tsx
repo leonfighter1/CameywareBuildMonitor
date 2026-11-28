@@ -1,6 +1,7 @@
 "use client";
-import { Card, Group, Stack, Text } from "@mantine/core";
-import { IconCircleCheck, IconCircleX } from "@tabler/icons-react";
+import { Button, Card, Group, Stack, Text } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
+import { IconCircleCheck, IconCircleX, IconListDetails } from "@tabler/icons-react";
 import type { Run, Step } from "@/lib/types";
 import {
   bytes,
@@ -94,7 +95,6 @@ export function RunCard({
       ? Math.min(97, (took / typical) * 100)
       : Math.min(97, Math.max(3, (ended / (run.steps.length + 1)) * 100));
   const left = live && typical && typical > took ? typical - took : undefined;
-  const versions = Object.entries(run.versions ?? {});
   return (
     <Card className={live ? "cy-live" : undefined} data-testid="run">
       <Group align="center" gap="xl" wrap="wrap">
@@ -140,6 +140,16 @@ export function RunCard({
           )}
         </Stack>
       </Group>
+      <Steps run={run} now={now} />
+    </Card>
+  );
+}
+
+/** A run's steps, each with its mark and time, and what runs after it (上线后). */
+function Steps({ run, now }: { run: Run; now: number }) {
+  const versions = Object.entries(run.versions ?? {});
+  return (
+    <>
       <Stack gap={8} mt="lg">
         {run.steps.map((s) => (
           <Group key={s.key} wrap="nowrap" align="center" gap="sm" data-testid="run-step">
@@ -181,6 +191,58 @@ export function RunCard({
             .join("；")}
         </Text>
       )}
+    </>
+  );
+}
+
+/** How far an ended run got: all of it once done; else the share of its steps done. */
+const reached = (run: Run) =>
+  run.state === "done"
+    ? 100
+    : run.steps.length
+      ? Math.round((run.steps.filter((s) => s.state === "done").length / run.steps.length) * 100)
+      : 0;
+
+/**
+ * An ended run in the list, on one line (the owner, 2026-11-27: 「下面的已经完成的不需要显示圆盘的进度了。只需要显示状态和
+ * 进度%多少就行」): its state and how far it got, when, how long, who from which computer; its steps on 步骤.
+ */
+export function RunRow({ run }: { run: Run }) {
+  const [open, toggle] = useDisclosure(false);
+  const took = Date.parse(run.ended ?? run.started) - Date.parse(run.started);
+  return (
+    <Card py="sm" data-testid="run">
+      <Group justify="space-between" wrap="wrap" gap="xs">
+        <Group gap="sm" wrap="wrap">
+          <StateBadge state={run.state} />
+          <Text
+            className="cy-digits"
+            fw={700}
+            c={run.state === "failed" ? "var(--t-danger)" : "var(--t-success)"}
+            data-testid="run-reached"
+          >
+            {reached(run)}%
+          </Text>
+          <Text size="sm" fw={600}>
+            {when(run.started)}
+          </Text>
+          <Text size="xs" c="var(--t-text-secondary)" data-testid="run-total">
+            {[`总时长 ${span(took)}`, run.deploy && `${run.deploy.by} · ${run.deploy.machine.name}`]
+              .filter(Boolean)
+              .join(" · ")}
+          </Text>
+        </Group>
+        <Button
+          size="xs"
+          variant="subtle"
+          leftSection={<IconListDetails size={14} />}
+          onClick={toggle.toggle}
+          aria-expanded={open}
+        >
+          {open ? "收起步骤" : `步骤 ${run.steps.length}`}
+        </Button>
+      </Group>
+      {open && <Steps run={run} now={Date.now()} />}
     </Card>
   );
 }

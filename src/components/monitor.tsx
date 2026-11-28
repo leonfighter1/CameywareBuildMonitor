@@ -6,6 +6,7 @@ import {
   Container,
   Group,
   PasswordInput,
+  SegmentedControl,
   Stack,
   Tabs,
   Text,
@@ -18,7 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ApiError, ops, session, signIn, takeHandoff } from "@/lib/api";
 import type { Env, Overview } from "@/lib/types";
-import { ago, ENV_NAMES } from "@/lib/words";
+import { ago } from "@/lib/words";
 import { ToneBadge } from "./bits";
 import { DeployPanel, JobsList } from "./deploy";
 import { RunCard } from "./run-card";
@@ -95,8 +96,13 @@ function SignIn() {
   );
 }
 
+/**
+ * An environment: its 部署 card, the deploy going on (with its ring), its services, then one of its two records at a
+ * time (the owner, 2026-11-27: 「整个UI还是显得内容太多了」): 部署记录 (every deploy the server saw) or 从页面发起的部署.
+ */
 function EnvTab({ env, overview, now }: { env: Env; overview: Overview; now: number }) {
   const { services, running, typical } = overview.envs[env];
+  const [records, setRecords] = useState<"runs" | "jobs">("runs");
   return (
     <Stack gap="lg">
       <DeployPanel
@@ -106,25 +112,30 @@ function EnvTab({ env, overview, now }: { env: Env; overview: Overview; now: num
         typical={typical}
         deployed={overview.envs[env].deployed}
       />
-      {running ? (
-        <RunCard run={running} now={now} typical={typical} />
-      ) : (
-        <Card>
-          <Text c="var(--t-text-secondary)">{ENV_NAMES[env]}现在没有部署在进行。</Text>
-        </Card>
-      )}
+      {running && <RunCard run={running} now={now} typical={typical} />}
       <Title order={2} fz={18}>
         服务
       </Title>
       <Services services={services} now={now} />
-      <Title order={2} fz={18}>
-        部署记录
-      </Title>
-      <RunsList env={env} now={now} typical={typical} />
-      <Title order={2} fz={18}>
-        从页面发起的部署
-      </Title>
-      <JobsList env={env} now={now} />
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <Title order={2} fz={18}>
+          记录
+        </Title>
+        <SegmentedControl
+          value={records}
+          onChange={(v) => setRecords(v as "runs" | "jobs")}
+          data={[
+            { value: "runs", label: "部署记录" },
+            { value: "jobs", label: "从页面发起的部署" },
+          ]}
+          data-testid="records"
+        />
+      </Group>
+      {records === "runs" ? (
+        <RunsList env={env} now={now} typical={typical} />
+      ) : (
+        <JobsList env={env} now={now} />
+      )}
     </Stack>
   );
 }
